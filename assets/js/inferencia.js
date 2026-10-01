@@ -22,7 +22,8 @@ export function normalizar(t){
 
 /* apelidos de frentes além do próprio nome cadastrado */
 const APELIDOS = {
-  "torre bc": [/\btorres?\s*b\s*(?:e|\/|-|&)?\s*c\b/],
+  /* a equipe escreve "TORRE B" e "TORRE C" separados: as duas ficam na frente Torre BC */
+  "torre bc": [/\btorres?\s*b\s*(?:e|\/|-|&)?\s*c\b/, /\btorre\s*b\b/, /\btorre\s*c\b/],
   "anexos":   [/\banexo\b/],
 };
 
