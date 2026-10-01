@@ -16,6 +16,7 @@ const comUnidades = new Set(); // pavimentos com unidades à mostra
 export function posicaoPavimento(nome){
   const k = chavePavimento(nome);
   if(/^\d+$/.test(k)) return 10 + Number(k);
+  if(/^\d+t$/.test(k)) return 10 + parseInt(k, 10) + 0.5;   /* "2º teto" logo depois do 2º pavimento */
   if(k === "subsolo") return 0;
   if(k === "terreo" || k === "pilotis") return 5;
   if(k === "mezanino") return 7;
@@ -111,6 +112,7 @@ function pavimentosHTML(f, pavs){
       '<label class="dica"><input type="checkbox" id="pavSub_' + f.id + '"> Subsolo</label>' +
       '<label class="dica"><input type="checkbox" id="pavTer_' + f.id + '"> Térreo</label>' +
       '<label class="dica"><input type="checkbox" id="pavCob_' + f.id + '"> Coberta</label>' +
+      '<label class="dica"><input type="checkbox" id="pavTeto_' + f.id + '"> Tetos (1º teto, 2º teto...)</label>' +
       '<button type="button" class="btn btn--p" data-loc-acao="criar-pavs" data-id="' + f.id + '">Criar</button>' +
     '</div>' +
     '<div class="locais__novo">' +
@@ -187,7 +189,11 @@ export async function acaoLocais(acao, id){
       if($("#pavTer_" + id).checked) nomes.push("Térreo");
       if(ate){
         if(!de || de > ate || ate > 99){ aviso("Confira o intervalo de pavimentos."); return; }
-        for(let n = de; n <= ate; n++) nomes.push(n + "º pavimento");
+        const tetos = $("#pavTeto_" + id).checked;
+        for(let n = de; n <= ate; n++){
+          nomes.push(n + "º pavimento");
+          if(tetos) nomes.push(n + "º teto");
+        }
       }
       if($("#pavCob_" + id).checked) nomes.push("Coberta");
       if(!nomes.length){ aviso("Informe o intervalo ou marque Subsolo, Térreo ou Coberta."); return; }

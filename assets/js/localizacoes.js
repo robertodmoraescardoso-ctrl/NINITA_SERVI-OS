@@ -84,36 +84,48 @@ export function servicoEm(servicoId, localId){
   return ligacoesDe(servicoId).some(function(id){ return alvo.has(id); });
 }
 
-/* "3º pavimento" -> "3º"; outros nomes ficam como estão */
-function curto(nome){
-  const m = /^(\d+)\s*[º°o]?\s*pav/i.exec(nome);
-  return m ? m[1] + "º" : nome;
+/* tipo do item no nível de pavimento: "pav" (1º pavimento), "teto" (1º teto) ou outro */
+function tipo(nome){
+  if(/^\d+\s*[º°o]?\s*pav/i.test(nome)) return "pav";
+  if(/^\d+\s*[º°o]?\s*teto/i.test(nome)) return "teto";
+  return "";
 }
-function numerado(nome){ return /^\d+\s*[º°o]?\s*pav/i.test(nome); }
+/* "3º pavimento" / "3º teto" -> "3º"; outros nomes ficam como estão */
+function curto(nome){
+  const m = /^(\d+)/.exec(nome);
+  return tipo(nome) && m ? m[1] + "º" : nome;
+}
+function numerado(nome){ return tipo(nome) === "pav"; }
 
-/* rótulo curto para botões: "3º pavimento" -> "3º pav" */
+/* rótulo curto para botões: "3º pavimento" -> "3º pav" ("3º teto" fica igual) */
 export function nomeCurto(nome){ return numerado(nome) ? curto(nome) + " pav" : nome; }
 
-/* Junta irmãos consecutivos em faixas: [1º,2º,3º,4º,6º] -> "1º a 4º, 6º pav" */
+/* Junta itens consecutivos do mesmo tipo em faixas:
+   [1º,2º,3º,4º,6º pav] -> "1º a 4º, 6º pav"; [2º,3º teto] -> "2º, 3º teto".
+   Pavimentos e tetos são contados separadamente (ficam intercalados na lista). */
 function faixas(lista){
   if(!lista.length) return "";
-  const irmaos = filhos(lista[0].pai_id);
-  const pos = function(l){ return irmaos.indexOf(l); };
-  const ord = lista.slice().sort(function(a,b){ return pos(a) - pos(b); });
-  const grupos = [];
-  ord.forEach(function(l){
-    const g = grupos[grupos.length - 1];
-    if(g && pos(l) === pos(g[g.length - 1]) + 1) g.push(l); else grupos.push([l]);
-  });
-  const todosNum = ord.every(function(l){ return numerado(l.nome); });
-  const partes = grupos.map(function(g){
-    const a = todosNum ? curto(g[0].nome) : g[0].nome;
-    const b = todosNum ? curto(g[g.length-1].nome) : g[g.length-1].nome;
-    if(g.length === 1) return a;
-    if(g.length === 2) return a + ", " + b;
-    return a + " a " + b;
-  });
-  return partes.join(", ") + (todosNum ? " pav" : "");
+  const todos = filhos(lista[0].pai_id);
+  const porTipo = new Map();
+  lista.forEach(function(l){ const k = tipo(l.nome); if(!porTipo.has(k)) porTipo.set(k, []); porTipo.get(k).push(l); });
+  const ordemTipos = ["", "pav", "teto"];
+  return ordemTipos.filter(function(k){ return porTipo.has(k); }).map(function(k){
+    const irmaos = todos.filter(function(l){ return tipo(l.nome) === k; });
+    const pos = function(l){ return irmaos.indexOf(l); };
+    const ord = porTipo.get(k).slice().sort(function(a,b){ return pos(a) - pos(b); });
+    const grupos = [];
+    ord.forEach(function(l){
+      const g = grupos[grupos.length - 1];
+      if(g && pos(l) === pos(g[g.length - 1]) + 1) g.push(l); else grupos.push([l]);
+    });
+    const partes = grupos.map(function(g){
+      const a = curto(g[0].nome), b = curto(g[g.length-1].nome);
+      if(g.length === 1) return a;
+      if(g.length === 2) return a + ", " + b;
+      return a + " a " + b;
+    });
+    return partes.join(", ") + (k === "pav" ? " pav" : k === "teto" ? " teto" : "");
+  }).join(" · ");
 }
 
 /* Texto legível da localização de um serviço, ex.:

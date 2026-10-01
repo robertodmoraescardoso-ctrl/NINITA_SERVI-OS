@@ -35,10 +35,12 @@ function regexDoNome(nome){
 }
 
 /* chave para comparar pavimentos: "3", "terreo", "subsolo"... */
+/* "2º pavimento" -> "2"; "2º teto" -> "2t" (teto é item próprio,
+   separado do pavimento de mesmo número) */
 export function chavePavimento(nome){
   const t = normalizar(nome);
   const m = /^(\d+)/.exec(t);
-  if(m) return String(Number(m[1]));
+  if(m) return String(Number(m[1])) + (/\bteto/.test(t) ? "t" : "");
   return t.replace(/\s*pavimento\s*/, "").trim();
 }
 
@@ -53,32 +55,44 @@ const PALAVRAS = [
 /* "pav", "pav.", "pavimento(s)", "andar(es)" — mas não "pavimentação" */
 const PAV = "(?:pav(?:imentos?)?\\b\\.?|andar(?:es)?\\b)";
 
-/* devolve nomes canônicos dos pavimentos citados no texto */
-export function pavimentosNoTexto(texto){
-  const t = normalizar(texto);
+/* "2o teto", "teto 3" — laje de teto, cadastrada como item próprio */
+const TETO = "(?:tetos?\\b)";
+
+/* as três formas de escrever números com uma palavra-chave (pav ou teto) */
+function regexesNumero(kw){
+  return {
+    /* "1o ao 4o pavimento", "1 a 4 pav", "1o/2o pav", "1o e 2o pav" */
+    faixa:  new RegExp("(\\d+)\\s*o?\\s*" + kw + "?\\s*(ao|a|ate|-|\\/|e)\\s*(\\d+)\\s*o?\\s*" + kw, "g"),
+    /* "pavimentos 1 a 8", "pavimento 3" */
+    depois: new RegExp(kw + "\\s*(\\d+)\\s*o?(?:\\s*(ao|a|ate|-)\\s*(\\d+))?", "g"),
+    /* "3o pavimento", "3 pav" */
+    antes:  new RegExp("(\\d+)\\s*o?\\s*" + kw, "g")
+  };
+}
+
+function numerosCom(t, kw){
   const nums = new Set();
+  const r = regexesNumero(kw);
   let m;
-  /* "1o ao 4o pavimento", "1 a 4 pav", "1o/2o pav", "1o e 2o pav" */
-  const faixa = new RegExp("(\\d+)\\s*o?\\s*" + PAV + "?\\s*(ao|a|ate|-|\\/|e)\\s*(\\d+)\\s*o?\\s*" + PAV, "g");
-  while((m = faixa.exec(t))){
+  while((m = r.faixa.exec(t))){
     const a = Number(m[1]), b = Number(m[3]);
     if(m[2] === "e" || m[2] === "/"){ nums.add(a); nums.add(b); }
     else if(b >= a && b - a < 60){ for(let n = a; n <= b; n++) nums.add(n); }
   }
-  /* "pavimentos 1 a 8", "pavimento 3" */
-  const depois = new RegExp(PAV + "\\s*(\\d+)\\s*o?(?:\\s*(ao|a|ate|-)\\s*(\\d+))?", "g");
-  while((m = depois.exec(t))){
+  while((m = r.depois.exec(t))){
     const a = Number(m[1]);
     if(m[3]){ const b = Number(m[3]); if(b >= a && b - a < 60) for(let n = a; n <= b; n++) nums.add(n); }
     else nums.add(a);
   }
-  /* "3o pavimento", "3 pav" */
-  const antes = new RegExp("(\\d+)\\s*o?\\s*" + PAV, "g");
-  while((m = antes.exec(t))) nums.add(Number(m[1]));
+  while((m = r.antes.exec(t))) nums.add(Number(m[1]));
+  return Array.from(nums).filter(function(n){ return n > 0 && n < 100; }).sort(function(a,b){ return a - b; });
+}
 
-  const nomes = Array.from(nums).filter(function(n){ return n > 0 && n < 100; })
-    .sort(function(a,b){ return a - b; })
-    .map(function(n){ return n + "º pavimento"; });
+/* devolve nomes canônicos dos pavimentos e tetos citados no texto */
+export function pavimentosNoTexto(texto){
+  const t = normalizar(texto);
+  const nomes = numerosCom(t, PAV).map(function(n){ return n + "º pavimento"; })
+    .concat(numerosCom(t, TETO).map(function(n){ return n + "º teto"; }));
   PALAVRAS.forEach(function(p){ if(p.re.test(t)) nomes.push(p.nome); });
   return nomes;
 }
@@ -95,9 +109,10 @@ export function localExtra(servico){
     t = t.replace(new RegExp(regexDoNome(f.nome).source, "g"), " ");
     (APELIDOS[normalizar(f.nome)] || []).forEach(function(re){ t = t.replace(new RegExp(re.source, "g"), " "); });
   });
-  t = t.replace(new RegExp("(\\d+)\\s*o?\\s*" + PAV + "?\\s*(ao|a|ate|-|\\/|e)\\s*(\\d+)\\s*o?\\s*" + PAV, "g"), " ")
-       .replace(new RegExp(PAV + "\\s*\\d+\\s*o?(?:\\s*(?:ao|a|ate|-)\\s*\\d+)?", "g"), " ")
-       .replace(new RegExp("\\d+\\s*o?\\s*" + PAV, "g"), " ");
+  [PAV, TETO].forEach(function(kw){
+    const r = regexesNumero(kw);
+    t = t.replace(r.faixa, " ").replace(r.depois, " ").replace(r.antes, " ");
+  });
   PALAVRAS.forEach(function(p){ t = t.replace(new RegExp(p.re.source, "g"), " "); });
   t = t.replace(/[·\-–—|,;:\/().]+/g, " ").trim();
   return /[a-z0-9]{2,}/.test(t) ? original : "";
