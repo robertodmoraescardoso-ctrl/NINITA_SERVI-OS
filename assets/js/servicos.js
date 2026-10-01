@@ -25,7 +25,11 @@ export function duracao(s){
   return diasCorridos(s.inicio, ref);
 }
 
+/* Atraso em dias corridos contra o término previsto.
+   Serviço PLANEJADO não tem atraso enquanto não for iniciado: o
+   aviso dele é "deveria ter começado", na aba Planejamento. */
 export function diasAtraso(s){
+  if(s.status === "planejado") return 0;
   if(s.status === "concluido"){
     if(s.fimPrev && s.fimReal){
       const d = difDias(s.fimPrev, s.fimReal);
@@ -92,10 +96,37 @@ export function ultimaAtualizacao(s){
 }
 
 export function proximoCodigo(){
+  return proximosCodigos(1)[0];
+}
+
+/* n códigos livres em sequência (cadastro em lote, importação) */
+export function proximosCodigos(n){
   let maior = 0;
   estado.servicos.forEach(function(s){
     const m = /(\d+)$/.exec(s.codigo || "");
     if(m) maior = Math.max(maior, Number(m[1]));
   });
-  return "SRV-" + String(maior + 1).padStart(3, "0");
+  const out = [];
+  for(let i = 1; i <= n; i++) out.push("SRV-" + String(maior + i).padStart(3, "0"));
+  return out;
 }
+
+export function codigoEmUso(codigo, exceto){
+  return estado.servicos.find(function(x){ return x.codigo === codigo && x.id !== exceto; }) || null;
+}
+
+/* Serviço novo com os campos de sempre. A linha de base (previsto no
+   momento do cadastro) fica congelada em inicioBase/fimBase para o
+   Gantt comparar previsto x realizado. */
+export function novoServico(campos){
+  const s = Object.assign({
+    id: idServico(), codigo:"", titulo:"", local:"", disciplina:"", status:"planejado",
+    inicio:"", fimPrev:"", fimReal:"", responsavel:"", equipe:[], avanco:0,
+    descricao:"", quantidade:0, unidade:"", apontamentos:[], fotos:[],
+    criadoEm: new Date().toISOString()
+  }, campos || {});
+  s.inicioBase = s.inicio;
+  s.fimBase = s.fimPrev;
+  return s;
+}
+function idServico(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,8); }

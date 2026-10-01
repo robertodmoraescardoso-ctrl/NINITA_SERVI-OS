@@ -138,6 +138,9 @@ export function abrirMenuDados(){
         '<button class="btn" data-acao="csv-apontamentos">Exportar apontamentos para Excel (.csv)</button>' +
         '<button class="btn" data-acao="backup">Gerar backup completo (.json, inclui fotos)</button>' +
         '<button class="btn" data-acao="restaurar">Restaurar de um backup</button>' +
+        '<button class="btn" data-acao="importar">Importar serviços de planilha (.xlsx ou .csv)</button>' +
+        '<button class="btn" data-acao="modelo-planilha">Baixar modelo de planilha</button>' +
+        '<button class="btn" data-acao="codigos">Corrigir códigos repetidos</button>' +
         '<input type="file" id="arquivoBackup" accept="application/json,.json" hidden>' +
         '<p class="dica" style="margin:4px 0 0">' +
           'Os dados ficam no seu projeto Supabase e aparecem em qualquer aparelho com a mesma senha. ' +

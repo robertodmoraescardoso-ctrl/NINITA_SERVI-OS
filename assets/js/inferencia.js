@@ -126,6 +126,17 @@ export function textoOnde(servico){
   return [loc, extra].filter(Boolean).join(" — ");
 }
 
+/* frente pelo nome escrito numa planilha ("Torre A", "TORRE B", "torre bc") */
+export function acharFrente(texto){
+  const t = normalizar(texto).trim();
+  if(!t) return null;
+  const fs = frentes();
+  return fs.find(function(f){ return normalizar(f.nome) === t; }) ||
+         fs.find(function(f){
+           return regexDoNome(f.nome).test(t) || (APELIDOS[normalizar(f.nome)] || []).some(function(re){ return re.test(t); });
+         }) || null;
+}
+
 /* Sugestão para um serviço:
    { tipo:"ok"|"ambiguo"|"nada", frente, pavimentos:[{id|null, nome}], motivo } */
 export function sugerir(servico){

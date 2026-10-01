@@ -283,6 +283,18 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--madeira);outline
 .locais__filhos--unid{padding-left:34px;background:var(--papel-3)}
 .locais__novo{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:8px 0}
 .modal--largo{max-width:980px}
+
+/* formulário de serviço em grupos (Fase 3) */
+.grupo{border:1px solid var(--linha);border-radius:var(--r);padding:10px 12px 12px;margin:0 0 12px;background:var(--papel-2)}
+.grupo legend{font-size:14px;font-weight:600;color:var(--marca-escura);padding:0 6px}
+.erro-campo{font-size:12.5px;color:var(--tijolo);font-weight:500;min-height:0}
+.erro-campo:empty{display:none}
+[aria-invalid="true"]{border-color:var(--tijolo) !important;background:var(--tijolo-claro)}
+.visualmente-oculto{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.passos{margin:0 0 12px;padding-left:20px;line-height:1.7}
+.passos li{margin-bottom:6px}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+s{color:var(--tinta-3)}
 .item__local{font-size:12.5px;color:var(--tinta-2);margin:-2px 0 3px}
 /* ============================================================
    LINHA DO TEMPO (gantt simplificado)

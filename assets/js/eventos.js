@@ -8,6 +8,10 @@ import { carregarExemplo } from "./exemplo.js";
 import { abrirFoto, galeria, pintarLightbox } from "./galeria.js";
 import { abrirLocais, acaoLocais } from "./locais.js";
 import { local } from "./localizacoes.js";
+import { abrirLote, gravarLote } from "./lote.js";
+import { abrirImportacao, baixarModelo, gravarImportacao, receberPlanilha } from "./importacao.js";
+import { abrirEdicaoLote, acaoEdicaoLote, aplicarEdicaoLote } from "./edicaoLote.js";
+import { abrirCodigos, corrigirCodigos } from "./codigos.js";
 import { pintarTudo, trocarAba } from "./navegacao.js";
 import { abrirTriagem, acaoTriagem } from "./triagem.js";
 import { pintarPainel } from "./painel.js";
@@ -21,7 +25,7 @@ import { $, aviso, fecharModal } from "./ui.js";
    ------------------------------------------------------------ */
 document.addEventListener("click", function(ev){
   const alvo = ev.target;
-  const btn = alvo.closest ? alvo.closest("[data-acao],[data-sel],[data-fechar],[data-foto],[data-nav],[data-sug],[data-remove-chip],[data-remove-foto],[data-filtro-local],[data-loc-acao],[data-tri]") : null;
+  const btn = alvo.closest ? alvo.closest("[data-acao],[data-sel],[data-fechar],[data-foto],[data-nav],[data-sug],[data-remove-chip],[data-remove-foto],[data-filtro-local],[data-loc-acao],[data-tri],[data-ed]") : null;
 
   /* fechar modal ao clicar na cortina */
   if(alvo.id === "cortina" || alvo.id === "lightbox"){ fecharModal(); return; }
@@ -45,6 +49,7 @@ document.addEventListener("click", function(ev){
   }
   if(btn.hasAttribute("data-loc-acao")){ acaoLocais(btn.getAttribute("data-loc-acao"), btn.getAttribute("data-id")); return; }
   if(btn.hasAttribute("data-tri")){ acaoTriagem(btn.getAttribute("data-tri"), btn.getAttribute("data-id")); return; }
+  if(btn.hasAttribute("data-ed")){ acaoEdicaoLote(btn.getAttribute("data-ed")); return; }
 
   if(btn.hasAttribute("data-sel")){
     estado.selecionado = btn.getAttribute("data-sel");
@@ -96,6 +101,12 @@ document.addEventListener("click", function(ev){
     trocarAba("acompanhamento");
   }
   if(acao === "triagem") abrirTriagem();
+  if(acao === "duplicar") abrirFormServico(null, true, { duplicarDe: idAlvo });
+  if(acao === "lote") abrirLote();
+  if(acao === "importar") abrirImportacao();
+  if(acao === "modelo-planilha") baixarModelo();
+  if(acao === "editar-lote") abrirEdicaoLote(btn.getAttribute("data-origem"));
+  if(acao === "codigos") abrirCodigos();
   if(acao === "limpar"){
     estado.filtros.busca = ""; estado.filtros.status = ""; estado.filtros.resp = ""; estado.filtros.titulo = ""; estado.filtros.local = "";
     $("#busca").value = ""; $("#filtroStatus").value = ""; $("#filtroResp").value = ""; $("#filtroTitulo").value = "";
@@ -145,6 +156,7 @@ document.addEventListener("change", function(ev){
   if(t.id === "filtroDiscPlano") pintarPlanejamento();
   if(t.id === "arquivoFotos"){ receberArquivos(t.files); t.value = ""; }
   if(t.id === "arquivoBackup" && t.files[0]){ restaurar(t.files[0]); t.value = ""; }
+  if(t.id === "arquivoPlanilha" && t.files[0]){ receberPlanilha(t.files[0]); t.value = ""; }
   if(t.id === "statusRapido") mudarStatus(t.value);
   if(t.id === "nomeObra"){
     estado.nomeObra = t.value;
@@ -236,9 +248,14 @@ $("#visaoTempo").addEventListener("click", function(){
 
 /* delegação para o botão de gravar dentro do modal */
 document.addEventListener("click", function(ev){
-  const b = ev.target.closest ? ev.target.closest("#btnGravarServico, #btnSalvarApont, #btnLimparApont, #zonaFotos") : null;
+  const b = ev.target.closest ? ev.target.closest("#btnGravarServico, #btnGravarOutro, #btnGravarLote, #btnGravarImportacao, #btnAplicarLote, #btnCorrigirCodigos, #btnSalvarApont, #btnLimparApont, #zonaFotos") : null;
   if(!b) return;
   if(b.id === "btnGravarServico") gravarServico(b.getAttribute("data-id") || null);
+  if(b.id === "btnGravarOutro")   gravarServico(null, true);
+  if(b.id === "btnGravarLote")    gravarLote();
+  if(b.id === "btnGravarImportacao") gravarImportacao();
+  if(b.id === "btnAplicarLote")   aplicarEdicaoLote();
+  if(b.id === "btnCorrigirCodigos") corrigirCodigos();
   if(b.id === "btnSalvarApont")   salvarApontamento();
   if(b.id === "zonaFotos")        $("#arquivoFotos").click();
   if(b.id === "btnLimparApont"){

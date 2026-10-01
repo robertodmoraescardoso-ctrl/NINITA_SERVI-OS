@@ -119,6 +119,7 @@ export function pintarPlanejamento(){
           '<td><div class="acoes">' +
             '<button class="btn btn--p btn--marca" data-acao="iniciar" data-id="' + s.id + '">Iniciar</button>' +
             '<button class="btn btn--p btn--fantasma" data-acao="editar" data-id="' + s.id + '">Editar</button>' +
+            '<button class="btn btn--p btn--fantasma" data-acao="duplicar" data-id="' + s.id + '">Duplicar</button>' +
           '</div></td>' +
         '</tr>';
       }).join("") + '</tbody>' +

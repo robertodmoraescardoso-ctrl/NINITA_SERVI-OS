@@ -46,6 +46,10 @@ assets/
     seletorLocal.js     escolha de frente e pavimentos no cadastro
     locais.js           tela "Locais" (cadastro da árvore)
     triagem.js          tela de classificação dos serviços sem localização
+    lote.js             cadastro em lote (mesmo serviço em vários pavimentos)
+    importacao.js       importação de planilha CSV/XLSX com validação
+    edicaoLote.js       edição em lote dos serviços filtrados
+    codigos.js          correção de códigos repetidos
 migracoes/              scripts SQL do banco, numerados (rodar em ordem)
 ```
 
@@ -174,8 +178,29 @@ rodada, o sistema funciona normalmente e mostra um aviso no painel.
 - **Sem localização:** os serviços antigos aparecem nesse botão. "Classificar
   agora" mostra a sugestão tirada do título e do campo Local de cada um.
 
+## Cadastro rápido (Fase 3)
+
+- **Formulário:** campos em grupos, aviso na hora embaixo do campo, duração em
+  dias úteis calcula o término, "Salvar e cadastrar outro" mantém local e datas.
+- **Duplicar** (no formulário e na linha do Planejamento): copia o serviço e
+  propõe a próxima janela de datas com a mesma duração.
+- **Cadastro em lote** (Planejamento): um serviço por pavimento/teto marcado,
+  com defasagem em dias úteis e prévia antes de gravar.
+- **Importar planilha** (Planejamento ou Dados): modelo para baixar, conferência
+  linha a linha, só grava as linhas válidas e depois de confirmar.
+  Para ler `.xlsx` o site carrega o SheetJS (`cdn.sheetjs.com`, versão 0.20.3)
+  apenas no momento da importação — é o leitor de Excel de referência para
+  navegador; sem ele, só CSV funcionaria.
+- **Editar em lote** (Painel e Planejamento): parte da lista filtrada; muda
+  responsável, status ou adia datas em dias úteis.
+- **Corrigir códigos repetidos** (Dados): renumera mostrando antes.
+- Serviços novos guardam a **linha de base** (`inicioBase`/`fimBase`), usada no
+  Gantt da Fase 5.
+
 ## Regras de negócio que não devem mudar sem decisão da engenharia
 
+- **Atraso:** serviço planejado não conta como atrasado enquanto não for
+  iniciado (o aviso dele é "deveria ter começado", na aba Planejamento).
 - **Dias úteis:** segunda a sexta, descontando os feriados listados em
   `assets/js/datas.js` (nacionais, estadual de PE e municipais do Recife,
   2026–2027). O cronograma oficial vive no MS Project com o mesmo calendário.

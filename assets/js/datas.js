@@ -77,3 +77,70 @@ export function feriadosNoPeriodo(ini, fim){
   }
   return out;
 }
+
+/* ------------------------------------------------------------
+   DIAS ÚTEIS — deslocamentos (Fase 3)
+   Usam o mesmo calendário acima (segunda a sexta, sem os
+   FERIADOS de Recife/PE). Servem ao cadastro em lote ("5 dias
+   úteis entre pavimentos") e à edição em lote ("adiar 3 dias").
+   ------------------------------------------------------------ */
+export function ehDiaUtil(iso){
+  const d = dataLocal(iso);
+  if(!d) return false;
+  const s = d.getDay();
+  return s !== 0 && s !== 6 && !ehFeriado(iso);
+}
+
+/* a própria data, se for dia útil; senão o próximo dia útil */
+export function proximoDiaUtil(iso){
+  const d = dataLocal(iso);
+  if(!d) return "";
+  while(!ehDiaUtil(paraISO(d))) d.setDate(d.getDate() + 1);
+  return paraISO(d);
+}
+
+/* anda n dias úteis a partir da data (n negativo volta no tempo).
+   somarDiasUteis("2026-10-09", 1) -> 2026-10-13 (pula fim de semana e 12/10) */
+export function somarDiasUteis(iso, n){
+  const d = dataLocal(iso);
+  if(!d) return "";
+  const passo = n < 0 ? -1 : 1;
+  let falta = Math.abs(n);
+  while(falta > 0){
+    d.setDate(d.getDate() + passo);
+    if(ehDiaUtil(paraISO(d))) falta--;
+  }
+  return paraISO(d);
+}
+
+/* término de um serviço que começa em `inicio` e dura `n` dias úteis
+   (o dia de início conta como o primeiro) */
+export function terminoPorDiasUteis(inicio, n){
+  const ini = proximoDiaUtil(inicio);
+  return n > 1 ? somarDiasUteis(ini, n - 1) : ini;
+}
+
+/* lê datas de planilha: "06/07/2026", "6/7/26", "2026-07-06" ou o número
+   de série do Excel (46209). Devolve "AAAA-MM-DD" ou "" se inválida.
+   Nunca usa new Date("2026-07-06"), que o navegador lê como UTC. */
+export function lerData(v){
+  if(v === null || v === undefined || v === "") return "";
+  if(typeof v === "number" && v > 20000 && v < 80000){
+    const d = new Date(1899, 11, 30);           /* base do Excel */
+    d.setDate(d.getDate() + Math.floor(v));
+    return paraISO(d);
+  }
+  if(v instanceof Date && !isNaN(v)) return paraISO(new Date(v.getFullYear(), v.getMonth(), v.getDate()));
+  const t = String(v).trim();
+  let m = /^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(t);
+  let a, mes, dia;
+  if(m){ a = +m[1]; mes = +m[2]; dia = +m[3]; }
+  else {
+    m = /^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{2}|\d{4})$/.exec(t);
+    if(!m) return "";
+    dia = +m[1]; mes = +m[2]; a = +m[3]; if(a < 100) a += 2000;
+  }
+  const d = new Date(a, mes - 1, dia);
+  if(d.getFullYear() !== a || d.getMonth() !== mes - 1 || d.getDate() !== dia) return "";
+  return paraISO(d);
+}

@@ -88,6 +88,7 @@
         <button id="visaoQuadro" aria-pressed="true">Quadro</button>
         <button id="visaoTempo" aria-pressed="false">Linha do tempo</button>
       </div>
+      <button class="btn btn--p" data-acao="editar-lote" data-origem="painel">Editar em lote</button>
       <button class="btn btn--p" id="btnImprimir">Imprimir</button>
     </div>
 
@@ -128,6 +129,9 @@
       <select id="filtroDiscPlano"><option value="">Todas as disciplinas</option></select>
       <div class="sep"></div>
       <button class="btn btn--marca" id="btnNovaTarefa">+ Nova tarefa planejada</button>
+      <button class="btn" data-acao="lote">Cadastro em lote</button>
+      <button class="btn" data-acao="importar">Importar planilha</button>
+      <button class="btn" data-acao="editar-lote" data-origem="planejamento">Editar em lote</button>
     </div>
 
     <div id="tabelaPlano"></div>
