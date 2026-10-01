@@ -19,7 +19,7 @@ index.html              página única (o nome tem que ser exatamente este)
 config.js               URL e chave publicável do Supabase
 assets/
   css/estilo.css        todo o visual (cores da obra, layout, impressão)
-  img/                  logo, ícone e foto da fachada
+  img/                  logo e ícone
   js/                   o sistema, dividido por assunto:
     main.js             ponto de partida
     supabase.js         conexão, validação da URL/chave, gravação
@@ -41,7 +41,12 @@ assets/
     navegacao.js        troca de abas
     eventos.js          cliques, teclas e campos
     exemplo.js          dados de exemplo para obra vazia
-migracoes/              (a partir da Fase 2) scripts SQL do banco
+    localizacoes.js     frente > pavimento > unidade: leitura, texto e gravação
+    inferencia.js       sugere frente/pavimento a partir do título e do local
+    seletorLocal.js     escolha de frente e pavimentos no cadastro
+    locais.js           tela "Locais" (cadastro da árvore)
+    triagem.js          tela de classificação dos serviços sem localização
+migracoes/              scripts SQL do banco, numerados (rodar em ordem)
 ```
 
 > **Atenção ao publicar:** o `index.html`, o `config.js` e a pasta `assets/`
@@ -155,6 +160,20 @@ tabelas e colunas, nunca apagam dados.
 
 ---
 
+## Localização (frente > pavimento > unidade)
+
+Depende da migração `migracoes/002_localizacoes.sql`. Enquanto ela não for
+rodada, o sistema funciona normalmente e mostra um aviso no painel.
+
+- **Botão Locais** (topo): cadastra pavimentos de uma vez ("do 1º ao 12º",
+  com subsolo, térreo e coberta) e unidades ("101-104, Hall").
+- **Painel:** 1º clique na frente, 2º no pavimento. O número em cada botão é
+  a quantidade de serviços em aberto ali.
+- **Cadastro:** campo Localização com atalho "marcar do 1º ao 4º". Um serviço
+  pode cobrir vários pavimentos.
+- **Sem localização:** os serviços antigos aparecem nesse botão. "Classificar
+  agora" mostra a sugestão tirada do título e do campo Local de cada um.
+
 ## Regras de negócio que não devem mudar sem decisão da engenharia
 
 - **Dias úteis:** segunda a sexta, descontando os feriados listados em
@@ -162,5 +181,6 @@ tabelas e colunas, nunca apagam dados.
   2026–2027). O cronograma oficial vive no MS Project com o mesmo calendário.
 - **Datas:** gravadas como `AAAA-MM-DD` e sempre lidas como data de calendário
   local (nunca `new Date("2026-07-06")`, que vira o dia anterior no Brasil).
-- **Exclusões:** hoje ainda são físicas. A exclusão lógica (`excluido_em`)
+- **Exclusões:** localizações e ligações nunca são apagadas (só ganham
+  `excluido_em`). Serviços e apontamentos ainda têm exclusão física; a lógica
   entra numa fase futura.

@@ -1,6 +1,8 @@
 import { diasCorridos, diasUteis, difDias, fmt, fmtLongo, hojeISO } from "./datas.js";
 import { explicarErro } from "./erros.js";
 import { estado } from "./estado.js";
+import { textoOnde } from "./inferencia.js";
+import { textoLocalizacao } from "./localizacoes.js";
 import { pintarTudo } from "./navegacao.js";
 import { num, quantPrevista } from "./servicos.js";
 import { salvar } from "./supabase.js";
@@ -18,7 +20,7 @@ export function tarefasPlanejadas(){
     .filter(function(s){ return !disc || s.disciplina === disc; })
     .filter(function(s){
       if(!termo) return true;
-      return [s.titulo,s.codigo,s.local,s.disciplina,s.responsavel,s.descricao]
+      return [s.titulo,s.codigo,s.local,textoLocalizacao(s.id),s.disciplina,s.responsavel,s.descricao]
         .join(" ").toLowerCase().indexOf(termo) !== -1;
     })
     .sort(function(a,b){ return (a.inicio||"9999").localeCompare(b.inicio||"9999"); });
@@ -105,7 +107,7 @@ export function pintarPlanejamento(){
             '<div class="tit">' + esc(s.titulo) + '</div>' +
             (atrasada ? '<span class="aviso-linha">deveria ter começado há ' + difDias(s.inicio, hojeISO()) + ' dia(s)</span>' : '') +
           '</td>' +
-          '<td class="sub esconde-mob">' + esc(s.local || "—") + '</td>' +
+          '<td class="sub esconde-mob">' + esc(textoOnde(s) || "—") + '</td>' +
           '<td class="num">' + fmt(s.inicio) +
             (faltam !== null && faltam >= 0 ? '<div class="sub" style="text-align:right">em ' + faltam + 'd</div>' : '') +
           '</td>' +

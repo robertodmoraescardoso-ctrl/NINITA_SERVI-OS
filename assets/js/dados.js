@@ -1,6 +1,7 @@
 import { diasUteis, fmtLongo, hojeISO } from "./datas.js";
 import { explicarErro } from "./erros.js";
 import { estado } from "./estado.js";
+import { textoLocalizacao } from "./localizacoes.js";
 import { servicosFiltrados } from "./filtros.js";
 import { prepararFotos } from "./fotos.js";
 import { pintarTudo } from "./navegacao.js";
@@ -32,13 +33,13 @@ export function csv(linhas){
 
 export function exportarServicos(){
   const linhas = [[
-    "Código","Título","Disciplina","Local","Status","Início","Término previsto","Término real",
+    "Código","Título","Disciplina","Localização","Local","Status","Início","Término previsto","Término real",
     "Dias corridos","Dias úteis","Atraso (dias)","Avanço (%)","Unidade","Quant. prevista","Quant. executada",
     "Saldo","Avanço físico (%)","Responsável","Equipe","Apontamentos","Fotos","Escopo"
   ]];
   servicosFiltrados().forEach(function(s){
     linhas.push([
-      s.codigo, s.titulo, s.disciplina, s.local, (STATUS[s.status]||{}).rot,
+      s.codigo, s.titulo, s.disciplina, textoLocalizacao(s.id), s.local, (STATUS[s.status]||{}).rot,
       fmtLongo(s.inicio), fmtLongo(s.fimPrev), s.fimReal ? fmtLongo(s.fimReal) : "",
       duracao(s), s.inicio ? diasUteis(s.inicio, dataReferencia(s)) : "",
       diasAtraso(s), s.avanco || 0, s.unidade || "", quantPrevista(s) || "", quantExecutada(s) || "",
@@ -82,7 +83,9 @@ export function base64ParaBlob(b64, tipo){
 export async function fazerBackup(){
   aviso("Gerando backup, aguarde...");
   const fotos = await lerTudo("fotos");
-  const pacote = { versao:1, em:new Date().toISOString(), obra:estado.nomeObra, servicos:estado.servicos, fotos:[] };
+  const pacote = { versao:1, em:new Date().toISOString(), obra:estado.nomeObra, servicos:estado.servicos, fotos:[],
+    /* cópia da árvore de locais e das ligações (só para consulta; a restauração não as altera) */
+    localizacoes:estado.localizacoes, ligacoes:Array.from(estado.ligacoes.entries()).map(function(p){ return { servico_id:p[0], localizacoes:Array.from(p[1]) }; }) };
   for(const f of fotos){
     pacote.fotos.push({ id:f.id, nome:f.nome, tipo:f.blob.type, dados: await blobParaBase64(f.blob) });
   }

@@ -6,7 +6,10 @@ import { mostrarErro } from "./erros.js";
 import { estado } from "./estado.js";
 import { carregarExemplo } from "./exemplo.js";
 import { abrirFoto, galeria, pintarLightbox } from "./galeria.js";
+import { abrirLocais, acaoLocais } from "./locais.js";
+import { local } from "./localizacoes.js";
 import { pintarTudo, trocarAba } from "./navegacao.js";
+import { abrirTriagem, acaoTriagem } from "./triagem.js";
 import { pintarPainel } from "./painel.js";
 import { iniciarTarefa, pintarPlanejamento } from "./planejamento.js";
 import { STATUS } from "./servicos.js";
@@ -18,13 +21,30 @@ import { $, aviso, fecharModal } from "./ui.js";
    ------------------------------------------------------------ */
 document.addEventListener("click", function(ev){
   const alvo = ev.target;
-  const btn = alvo.closest ? alvo.closest("[data-acao],[data-sel],[data-fechar],[data-foto],[data-nav],[data-sug],[data-remove-chip],[data-remove-foto]") : null;
+  const btn = alvo.closest ? alvo.closest("[data-acao],[data-sel],[data-fechar],[data-foto],[data-nav],[data-sug],[data-remove-chip],[data-remove-foto],[data-filtro-local],[data-loc-acao],[data-tri]") : null;
 
   /* fechar modal ao clicar na cortina */
   if(alvo.id === "cortina" || alvo.id === "lightbox"){ fecharModal(); return; }
   if(!btn) return;
 
   if(btn.hasAttribute("data-fechar")){ fecharModal(); return; }
+
+  /* filtro por frente/pavimento: clicar de novo no que já está
+     marcado volta um nível (pavimento -> frente -> todas) */
+  if(btn.hasAttribute("data-filtro-local")){
+    const idLocal = btn.getAttribute("data-filtro-local");
+    const ativo = btn.getAttribute("aria-pressed") === "true";
+    if(ativo && idLocal){
+      const l = idLocal === "__sem" ? null : local(idLocal);
+      estado.filtros.local = l && l.pai_id ? l.pai_id : "";
+    } else {
+      estado.filtros.local = idLocal;
+    }
+    pintarPainel();
+    return;
+  }
+  if(btn.hasAttribute("data-loc-acao")){ acaoLocais(btn.getAttribute("data-loc-acao"), btn.getAttribute("data-id")); return; }
+  if(btn.hasAttribute("data-tri")){ acaoTriagem(btn.getAttribute("data-tri"), btn.getAttribute("data-id")); return; }
 
   if(btn.hasAttribute("data-sel")){
     estado.selecionado = btn.getAttribute("data-sel");
@@ -75,8 +95,9 @@ document.addEventListener("click", function(ev){
     $("#filtroLista").value = "todos";
     trocarAba("acompanhamento");
   }
+  if(acao === "triagem") abrirTriagem();
   if(acao === "limpar"){
-    estado.filtros.busca = ""; estado.filtros.status = ""; estado.filtros.resp = ""; estado.filtros.titulo = "";
+    estado.filtros.busca = ""; estado.filtros.status = ""; estado.filtros.resp = ""; estado.filtros.titulo = ""; estado.filtros.local = "";
     $("#busca").value = ""; $("#filtroStatus").value = ""; $("#filtroResp").value = ""; $("#filtroTitulo").value = "";
     pintarPainel();
   }
@@ -196,6 +217,7 @@ $("#btnIrPlano").addEventListener("click", function(){ trocarAba("planejamento")
 $("#btnNovaTarefa").addEventListener("click", function(){ abrirFormServico(null, true); });
 $("#tabPlano").addEventListener("click", function(){ trocarAba("planejamento"); });
 $("#btnDados").addEventListener("click", abrirMenuDados);
+$("#btnLocais").addEventListener("click", abrirLocais);
 $("#btnImprimir").addEventListener("click", function(){ window.print(); });
 $("#tabPainel").addEventListener("click", function(){ trocarAba("painel"); });
 $("#tabAcomp").addEventListener("click", function(){ trocarAba("acompanhamento"); });

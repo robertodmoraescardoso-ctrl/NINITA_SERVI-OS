@@ -1,8 +1,9 @@
-import { fmt } from "./datas.js";
+import { diasCorridos, fmtLongo } from "./datas.js";
 import { estado } from "./estado.js";
 import { servicosFiltrados } from "./filtros.js";
-import { srcFoto } from "./fotos.js";
 import { pintarLinhaTempo } from "./gantt.js";
+import { comDescendentes, filhos, frenteDe, frentes, nomeCurto, semLocalizacao, servicoEm } from "./localizacoes.js";
+import { textoOnde } from "./inferencia.js";
 import { avancoFisico, diasAtraso, duracao, estaAtrasado, fotosDo, num, pessoasDo, quantExecutada, quantPrevista, STATUS } from "./servicos.js";
 import { $, esc } from "./ui.js";
 
@@ -23,35 +24,56 @@ export function pintarIndicadores(){
   $("#contaPainel").textContent  = t.length;
   $("#contaAcomp").textContent   = t.filter(function(s){ return s.status !== "concluido"; }).length;
   $("#contaPlano").textContent   = t.filter(function(s){ return s.status === "planejado"; }).length;
-  pintarFaixaObra();
 }
 
-/* a faixa mostra o retrato do dia: período coberto e o que está aberto */
-export function pintarFaixaObra(){
-  const alvo = $("#faixaDados");
+/* ------------------------------------------------------------
+   FILTRO POR LOCALIZAÇÃO
+   1º clique: a frente. 2º clique: o pavimento. O número em cada
+   botão é a quantidade de serviços EM ABERTO (não concluídos).
+   ------------------------------------------------------------ */
+function chipFiltro(id, rotulo, n, ativo){
+  return '<button type="button" class="chip-filtro" data-filtro-local="' + id + '" aria-pressed="' + ativo + '">' +
+    esc(rotulo) + (n === null ? '' : ' <span class="chip-filtro__n">' + n + '</span>') + '</button>';
+}
+
+export function pintarFiltroLocal(){
+  const alvo = $("#filtroLocal");
   if(!alvo) return;
-  const t = estado.servicos;
-  const abertos = t.filter(function(s){ return s.status !== "concluido"; }).length;
-  const atrasados = t.filter(function(s){ return s.status !== "concluido" && estaAtrasado(s); }).length;
+  if(!estado.locAtivo){
+    alvo.innerHTML = estado.locErro ? '<div class="aviso">' + esc(estado.locErro) + '</div>' : '';
+    return;
+  }
+  const abertos = estado.servicos.filter(function(s){ return s.status !== "concluido"; });
+  const conta = function(id){ return abertos.filter(function(s){ return servicoEm(s.id, id); }).length; };
+  const sem = estado.servicos.filter(function(s){ return semLocalizacao(s.id); }).length;
+  /* filtro que deixou de existir (tudo classificado, local desativado) volta para "Todas" */
+  if((estado.filtros.local === "__sem" && !sem) ||
+     (estado.filtros.local && estado.filtros.local !== "__sem" && !frenteDe(estado.filtros.local))){
+    estado.filtros.local = "";
+  }
+  const f = estado.filtros.local;
+  const frenteSel = f && f !== "__sem" ? frenteDe(f) : null;
 
-  const inicios = t.map(function(s){ return s.inicio; }).filter(Boolean).sort();
-  const fins = t.map(function(s){ return s.fimReal || s.fimPrev; }).filter(Boolean).sort();
-  const periodo = inicios.length
-    ? fmt(inicios[0]) + " a " + (fins.length ? fmt(fins[fins.length - 1]) : "em aberto")
-    : "sem serviços";
+  let h = '<div class="filtro-local__linha"><span class="filtro-local__rot">Frente</span>' +
+    chipFiltro("", "Todas", null, !f) +
+    frentes().map(function(fr){ return chipFiltro(fr.id, fr.nome, conta(fr.id), !!frenteSel && frenteSel.id === fr.id); }).join("") +
+    (sem ? chipFiltro("__sem", "Sem localização", sem, f === "__sem") : "") +
+  '</div>';
 
-  const avanco = t.length
-    ? Math.round(t.reduce(function(n,s){ return n + (s.avanco || 0); }, 0) / t.length)
-    : 0;
-
-  alvo.innerHTML =
-    dado(periodo, "Período dos serviços") +
-    dado(abertos + " de " + t.length, "Serviços em aberto") +
-    dado(avanco + "%", "Avanço médio") +
-    (atrasados ? dado(String(atrasados), "Em atraso") : "");
-}
-export function dado(valor, rotulo){
-  return '<div class="faixa-obra__dado"><b>' + esc(valor) + '</b><span>' + rotulo + '</span></div>';
+  if(frenteSel){
+    const pavs = filhos(frenteSel.id);
+    if(pavs.length){
+      h += '<div class="filtro-local__linha"><span class="filtro-local__rot">Pavimento</span>' +
+        chipFiltro(frenteSel.id, "Todos", null, f === frenteSel.id) +
+        pavs.map(function(p){ return chipFiltro(p.id, nomeCurto(p.nome), conta(p.id), comDescendentes(p.id).has(f)); }).join("") +
+      '</div>';
+    }
+  }
+  if(f === "__sem"){
+    h += '<div class="filtro-local__linha"><span class="dica">Serviços antigos sem frente/pavimento.</span>' +
+      '<button type="button" class="btn btn--p btn--marca" data-acao="triagem">Classificar agora</button></div>';
+  }
+  alvo.innerHTML = h;
 }
 
 /* ------------------------------------------------------------
@@ -147,81 +169,58 @@ export function pintarResumoQuant(){
 /* ------------------------------------------------------------
    PAINEL — cartões
    ------------------------------------------------------------ */
+/* Cartão simples: o que é, onde é, quando, quanto falta e se atrasou */
 export function cartao(s){
-  const fotos = fotosDo(s);
   const dur = duracao(s);
   const atraso = diasAtraso(s);
   const st = STATUS[s.status] || STATUS.planejado;
+  const concluido = s.status === "concluido";
+  const fim = concluido && s.fimReal ? s.fimReal : s.fimPrev;
+  const onde = textoOnde(s);
+  const nFotos = fotosDo(s).length;
   const equipe = pessoasDo(s);
+  const fisico = avancoFisico(s);
 
-  let tira;
-  if(fotos.length){
-    const mostrar = fotos.slice(-3);
-    tira = mostrar.map(function(f){
-      return '<img src="' + srcFoto(f) + '" alt="Foto do serviço" data-foto="' + f + '" data-srv="' + s.id + '">';
-    }).join("");
-    if(fotos.length > 3) tira += '<div class="tira__mais">+' + (fotos.length - 3) + '</div>';
-  } else {
-    tira = '<div class="tira__vazia">sem fotos</div>';
-  }
-
-  let classeContador = "";
-  if(s.status === "concluido") classeContador = " contador--fechado";
-  else if(atraso > 0) classeContador = " contador--atrasado";
-
-  const equipeHTML = equipe.length
-    ? equipe.slice(0,3).map(function(p){ return '<span class="pessoa">' + esc(p) + '</span>'; }).join("") +
-      (equipe.length > 3 ? '<span class="pessoa">+' + (equipe.length - 3) + '</span>' : "")
-    : '<span class="pessoa pessoa--vazio">sem pessoas registradas</span>';
-
-  const fimMostrado = s.status === "concluido" && s.fimReal ? s.fimReal : s.fimPrev;
-  const fimPendente = !(s.status === "concluido" && s.fimReal) ;
+  const info = [
+    nFotos ? nFotos + (nFotos === 1 ? " foto" : " fotos") : "",
+    equipe.slice(0, 2).join(", ") + (equipe.length > 2 ? " +" + (equipe.length - 2) : "")
+  ].filter(Boolean).join(" · ");
 
   return '' +
-  '<article class="cartao" data-id="' + s.id + '">' +
-    '<div class="cartao__topo">' +
-      '<span class="cartao__faixa" style="background:' + st.cor + '"></span>' +
-      '<div class="cartao__tit">' +
-        '<span class="cartao__cod">' + esc(s.codigo) + (s.disciplina ? " · " + esc(s.disciplina) : "") + '</span>' +
-        '<h3>' + esc(s.titulo) + '</h3>' +
-        (s.local ? '<div class="cartao__local">' + esc(s.local) + '</div>' : '') +
-      '</div>' +
+  '<article class="cartao cartao--' + s.status + (atraso > 0 && !concluido ? " cartao--atrasado" : "") + '" data-id="' + s.id + '">' +
+    '<div class="cartao__cab">' +
+      '<span class="cartao__cod">' + esc(s.codigo) + (s.disciplina ? " · " + esc(s.disciplina) : "") + '</span>' +
       '<span class="marca marca--' + s.status + '">' + st.rot + '</span>' +
     '</div>' +
+    '<h3 class="cartao__titulo">' + esc(s.titulo) + '</h3>' +
+    (onde ? '<div class="cartao__local">' + esc(onde) + '</div>'
+          : (semLocalizacao(s.id) ? '<div class="cartao__local cartao__local--sem">Sem localização</div>' : '')) +
 
-    '<div class="tira">' + tira + '</div>' +
-    '<div class="prog"><div class="prog__b" style="width:' + (s.avanco || 0) + '%"></div></div>' +
-
-    '<div class="dados">' +
-      '<div class="dados__c">' +
-        '<span class="dados__r">Início</span>' +
-        '<span class="dados__v">' + fmt(s.inicio) + '</span>' +
-      '</div>' +
-      '<div class="dados__c">' +
-        '<span class="dados__r">' + (s.status === "concluido" ? "Término" : "Previsto") + '</span>' +
-        '<span class="dados__v' + (fimPendente ? " pendente" : "") + '">' + fmt(fimMostrado) + '</span>' +
-      '</div>' +
-      '<div class="contador' + classeContador + '">' +
-        '<span class="contador__n">' + (dur === null ? "—" : dur) + '</span>' +
-        '<span class="contador__u">' + (s.status === "concluido" ? "dias" : "dias") + '</span>' +
-      '</div>' +
+    '<div class="cartao__datas">' +
+      'Início <b>' + fmtLongo(s.inicio) + '</b> · ' + (concluido ? "Término" : "Previsto") + ' <b>' + fmtLongo(fim) + '</b>' +
+      (s.status === "planejado"
+        /* ainda não começou: mostra o prazo previsto, não dias decorridos */
+        ? (s.inicio && s.fimPrev ? ' · prazo de ' + diasCorridos(s.inicio, s.fimPrev) + ' dias' : '')
+        : (dur === null ? '' : ' · ' + dur + (dur === 1 ? ' dia' : ' dias'))) +
     '</div>' +
 
+    '<div class="cartao__avanco">' +
+      '<div class="prog"><div class="prog__b" style="width:' + (s.avanco || 0) + '%"></div></div>' +
+      '<span>' + (s.avanco || 0) + '%</span>' +
+    '</div>' +
     (quantPrevista(s)
-      ? '<div class="quant-cartao">' +
-          '<span>' + num(quantExecutada(s)) + ' / ' + num(quantPrevista(s)) + ' ' + esc(s.unidade || "") + '</span>' +
-          '<span class="pct">' + (avancoFisico(s) === null ? "" : avancoFisico(s) + "% físico") + '</span>' +
-        '</div>'
+      ? '<div class="cartao__quant">' + num(quantExecutada(s)) + ' de ' + num(quantPrevista(s)) + ' ' + esc(s.unidade || "") +
+          ' executados' + (fisico === null ? '' : ' (' + fisico + '% físico)') + '</div>'
       : '') +
 
     (atraso > 0
       ? '<div class="alerta-atraso">' +
-          (s.status === "concluido" ? "Concluído " + atraso + " dia(s) após o previsto" : "Atrasado em " + atraso + " dia(s)") +
+          (concluido ? "Concluído " + atraso + " dia(s) após o previsto" : "Atrasado em " + atraso + " dia(s)") +
         '</div>'
       : '') +
 
     '<div class="cartao__pe">' +
-      '<div class="equipe">' + equipeHTML + '</div>' +
+      '<span class="cartao__info">' + esc(info) + '</span>' +
       '<div class="acoes">' +
         '<button class="btn btn--p" data-acao="acompanhar" data-id="' + s.id + '">Atualizar</button>' +
         '<button class="btn btn--p btn--fantasma" data-acao="editar" data-id="' + s.id + '">Editar</button>' +
@@ -259,6 +258,8 @@ export function pintarQuadro(){
 
 export function pintarPainel(){
   pintarIndicadores();
+  pintarFiltroLocal();
+  $("#filtroStatus").value = estado.filtros.status;
   atualizarFiltroResp();
   atualizarFiltroTitulo();
   pintarResumoQuant();

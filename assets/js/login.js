@@ -2,6 +2,7 @@ import { SUPABASE_URL, SUPABASE_CHAVE } from "../../config.js";
 import { explicarErro } from "./erros.js";
 import { estado } from "./estado.js";
 import { prepararFotos } from "./fotos.js";
+import { carregarLocalizacoes } from "./localizacoes.js";
 import { trocarAba } from "./navegacao.js";
 import { cfgLocal, CHAVE_SB, conectar, configurado, definirConfig, guardarCfgLocal, ler, lerTudo, problemaConfig, sb, URL_SB } from "./supabase.js";
 import { $, aviso, esc, fecharModal } from "./ui.js";
@@ -98,6 +99,7 @@ export async function carregarTudo(){
     const cfg = await ler("config", "obra");
     estado.nomeObra = cfg ? cfg.valor : "Torre A · Torre BC · Periferia";
     $("#nomeObra").value = estado.nomeObra;
+    await carregarLocalizacoes();   /* não lança erro: sem a migração, só desliga a localização */
     await prepararFotos();
     mostrarUsuario();
     trocarAba("painel");

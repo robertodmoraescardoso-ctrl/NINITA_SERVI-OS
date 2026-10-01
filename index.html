@@ -9,7 +9,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/css/estilo.css">
 </head>
 <body>
@@ -38,6 +38,7 @@
   <div class="carimbo__acoes">
     <div class="usuario"><span id="usuarioAtivo"></span>
       <button class="btn btn--claro btn--p" id="btnSair">Sair</button></div>
+    <button class="btn btn--claro btn--p" id="btnLocais">Locais</button>
     <button class="btn btn--claro btn--p" id="btnDados">Dados</button>
     <button class="btn btn--marca" id="btnIrPlano">+ Nova tarefa</button>
   </div>
@@ -48,14 +49,6 @@
   <section class="tela" id="painel" role="tabpanel" aria-labelledby="tabPainel">
     <div id="avisoArmazenamento" class="aviso oculto"></div>
 
-    <section class="faixa-obra">
-      <img src="assets/img/fachada.jpg" alt="Perspectiva do Villa Ninita">
-      <div class="faixa-obra__txt">
-        <span class="faixa-obra__olho">Poço da Panela &nbsp;·&nbsp; Recife-PE</span>
-        <h2>Villa Ninita</h2>
-        <div class="faixa-obra__dados" id="faixaDados"></div>
-      </div>
-    </section>
 
     <div class="indicadores">
       <div class="ind"><span class="ind__n" id="kpiTotal">0</span><span class="ind__r">Serviços</span></div>
@@ -66,12 +59,15 @@
       <div class="ind"><span class="ind__n" id="kpiFotos">0</span><span class="ind__r">Fotos no acervo</span></div>
     </div>
 
+    <div class="filtro-local" id="filtroLocal"></div>
+
     <div class="barra">
       <div class="campo-busca">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
         <input type="text" id="busca" placeholder="Buscar por título, local, colaborador ou código">
       </div>
       <select id="filtroStatus">
+        <option value="aberto" selected>Em aberto (não concluídos)</option>
         <option value="">Todos os status</option>
         <option value="planejado">Planejado</option>
         <option value="andamento">Em andamento</option>

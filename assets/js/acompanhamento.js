@@ -1,6 +1,8 @@
 import { diasUteis, feriadosNoPeriodo, fmtLongo, hojeISO } from "./datas.js";
 import { explicarErro } from "./erros.js";
 import { estado } from "./estado.js";
+import { textoOnde } from "./inferencia.js";
+import { textoLocalizacao } from "./localizacoes.js";
 import { guardarFoto, srcFoto } from "./fotos.js";
 import { pintarTudo } from "./navegacao.js";
 import { avancoFisico, dataReferencia, diasAtraso, duracao, estaAtrasado, num, pessoasDo, quantExecutada, quantPrevista, STATUS, textoQuant } from "./servicos.js";
@@ -40,6 +42,7 @@ export function pintarListaServicos(){
     return '<button class="item" data-sel="' + s.id + '" aria-current="' + (estado.selecionado === s.id) + '">' +
       '<span class="item__cod">' + esc(s.codigo) + '</span>' +
       '<div class="item__tit">' + esc(s.titulo) + '</div>' +
+      (textoLocalizacao(s.id) ? '<div class="item__local">' + esc(textoLocalizacao(s.id)) + '</div>' : '') +
       '<div class="item__meta">' +
         '<span class="ponto ponto--' + s.status + '"></span>' + st.rot +
         (dur !== null ? ' · <span class="mono">' + dur + 'd</span>' : '') +
@@ -76,7 +79,7 @@ export function pintarDetalhe(){
       '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap">' +
         '<div>' +
           '<h2>' + esc(s.titulo) + '</h2>' +
-          (s.local ? '<div style="color:var(--tinta-2);font-size:13px">' + esc(s.local) + '</div>' : '') +
+          (textoOnde(s) ? '<div style="color:var(--tinta-2);font-size:13px">' + esc(textoOnde(s)) + '</div>' : '') +
         '</div>' +
         '<div style="display:flex;gap:6px;align-items:center">' +
           '<select id="statusRapido" class="btn btn--p" style="padding:5px 8px">' +

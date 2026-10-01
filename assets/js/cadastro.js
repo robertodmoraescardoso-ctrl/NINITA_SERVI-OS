@@ -1,7 +1,10 @@
 import { difDias, hojeISO } from "./datas.js";
 import { explicarErro, mostrarErro } from "./erros.js";
 import { estado } from "./estado.js";
+import { definirLigacoes, ligacoesDe } from "./localizacoes.js";
 import { pintarTudo } from "./navegacao.js";
+import { idsSelecionados, montarSeletor } from "./seletorLocal.js";
+import { abrirTriagem } from "./triagem.js";
 import { fotosDo, proximoCodigo, STATUS, UNIDADES } from "./servicos.js";
 import { apagar, salvar } from "./supabase.js";
 import { $, aviso, esc, fecharModal, id } from "./ui.js";
@@ -9,7 +12,10 @@ import { $, aviso, esc, fecharModal, id } from "./ui.js";
 /* ------------------------------------------------------------
    CADASTRO / EDIÇÃO DE SERVIÇO
    ------------------------------------------------------------ */
-export function abrirFormServico(idServico, comoTarefa){
+let voltarParaTriagem = false;
+
+export function abrirFormServico(idServico, comoTarefa, opcoes){
+  voltarParaTriagem = !!(opcoes && opcoes.deTriagem);
   const s = idServico ? estado.servicos.find(function(x){ return x.id === idServico; }) : null;
   const novo = !s;
   const d = s || {
@@ -52,12 +58,12 @@ export function abrirFormServico(idServico, comoTarefa){
             '<span class="dica">Use sempre o mesmo nome para o mesmo tipo de serviço (ex.: sempre "Forma", nunca variar para "FORMA" ou "Fôrma") — é o que permite filtrar todos de uma vez.</span>' +
           '</div>' +
 
-          '<div class="campo campo--largo"><label for="fLocal">Local / frente de serviço</label>' +
-            '<input type="text" id="fLocal" list="listaSetores" value="' + esc(d.local) + '" placeholder="Torre A · 1º pavimento · trecho 01">' +
-            '<datalist id="listaSetores">' +
-              ['Torre A','Torre BC','Periferia','Anexos','Guarita Pedestre','IEP','Subsolo','Térreo','Cobertura']
-               .map(function(o){ return '<option value="' + o + '">'; }).join("") +
-            '</datalist></div>' +
+          '<div class="campo campo--largo"><label>Localização</label>' +
+            '<div class="seletor-loc" id="seletorLocal"></div></div>' +
+
+          '<div class="campo campo--largo"><label for="fLocal">Detalhe do local</label>' +
+            '<input type="text" id="fLocal" value="' + esc(d.local) + '" placeholder="Trecho, eixo, fachada... (opcional)">' +
+            '<span class="dica">Complemento livre. Frente e pavimento ficam na Localização acima, que é o que o filtro usa.</span></div>' +
 
           '<div class="campo"><label for="fInicio">Data de início *</label>' +
             '<input type="date" id="fInicio" value="' + esc(d.inicio) + '"></div>' +
@@ -98,6 +104,11 @@ export function abrirFormServico(idServico, comoTarefa){
       '</div>' +
     '</div>' +
   '</div>';
+
+  /* localização: a do serviço, ou — num cadastro novo — a que estiver
+     filtrada no painel, para agilizar o lançamento por pavimento */
+  const filtroLocal = estado.filtros.local && estado.filtros.local !== "__sem" ? [estado.filtros.local] : [];
+  montarSeletor($("#seletorLocal"), s ? ligacoesDe(s.id) : filtroLocal);
 
   setTimeout(function(){ const t = $("#fTitulo"); if(t) t.focus(); }, 40);
 }
@@ -144,13 +155,27 @@ export async function gravarServico(idServico){
   if(s.status === "concluido" && !s.fimReal) s.fimReal = s.fimPrev || hojeISO();
   if(s.status !== "concluido") s.fimReal = fimReal;
 
+  const locais = idsSelecionados();
+
   try{
     await salvar("servicos", s);
   } catch(e){ aviso(explicarErro(e)); return; }
   if(!existente) estado.servicos.push(s);
+
+  /* a localização vai numa tabela à parte, depois do serviço existir */
+  let falhaLocal = null;
+  if(estado.locAtivo){
+    try { await definirLigacoes(s.id, locais); }
+    catch(e){ falhaLocal = e; console.error(e); }
+  }
   fecharModal();
   pintarTudo();
+  if(falhaLocal){
+    aviso("O serviço foi gravado, mas a localização não: " + explicarErro(falhaLocal) + " Abra o serviço e tente de novo.", "erro");
+    return;
+  }
   aviso(existente ? "Serviço atualizado" : "Serviço " + s.codigo + " cadastrado");
+  if(voltarParaTriagem){ voltarParaTriagem = false; abrirTriagem(); }
 }
 
 export async function excluirServico(idServico){

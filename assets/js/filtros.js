@@ -1,4 +1,5 @@
 import { estado } from "./estado.js";
+import { semLocalizacao, servicoEm, textoLocalizacao } from "./localizacoes.js";
 import { duracao, ultimaAtualizacao } from "./servicos.js";
 
 /* ------------------------------------------------------------
@@ -9,12 +10,17 @@ export function servicosFiltrados(){
   const termo = f.busca.trim().toLowerCase();
 
   let lista = estado.servicos.filter(function(s){
-    if(f.status && s.status !== f.status) return false;
+    if(f.status === "aberto"){ if(s.status === "concluido") return false; }
+    else if(f.status && s.status !== f.status) return false;
     if(f.resp && s.responsavel !== f.resp) return false;
     if(f.titulo && s.titulo !== f.titulo) return false;
+    if(f.local && estado.locAtivo){
+      if(f.local === "__sem"){ if(!semLocalizacao(s.id)) return false; }
+      else if(!servicoEm(s.id, f.local)) return false;
+    }
     if(!termo) return true;
     const alvo = [
-      s.titulo, s.codigo, s.local, s.disciplina, s.descricao, s.responsavel,
+      s.titulo, s.codigo, s.local, textoLocalizacao(s.id), s.disciplina, s.descricao, s.responsavel,
       (s.equipe || []).join(" "),
       (s.apontamentos || []).map(function(a){
         return (a.observacao || "") + " " + (a.colaboradores || []).join(" ");
