@@ -1,0 +1,4 @@
+# quebras de linha padronizadas, para o Windows não marcar alterações falsas
+* text=auto eol=lf
+*.png binary
+*.jpg binary
