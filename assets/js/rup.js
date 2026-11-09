@@ -1,0 +1,166 @@
+import { diasUteis, hojeISO, somarDiasUteis, terminoPorDiasUteis } from "./datas.js";
+import { estado } from "./estado.js";
+import { quantExecutada, quantPrevista } from "./servicos.js";
+
+/* ============================================================
+   PRODUTIVIDADE — RUP (Razão Unitária de Produção)
+   Metodologia do prof. Ubiraci Espinelli Lemes de Souza (Poli-USP):
+
+     RUP = Hh / QS      homens-hora gastos por unidade de serviço
+                        (ex.: 0,45 Hh/m²). QUANTO MENOR, MELHOR.
+
+     Hh do dia          = pessoas no serviço x jornada diária (h)
+     QS do dia          = quantidade executada lançada no apontamento
+
+     RUP diária         = Hh do dia / QS do dia
+     RUP cumulativa     = soma dos Hh / soma das QS, do início até a data
+     RUP potencial      = mediana das RUPs diárias que ficaram iguais ou
+                          abaixo da RUP cumulativa — o desempenho bom e
+                          repetível da equipe ("produtividade máxima
+                          alcançável"), usado nas projeções
+     Perda              = RUP cumulativa - RUP potencial: o quanto as
+                          anormalidades (falta de material, retrabalho,
+                          chuva, frente não liberada) estão custando
+
+   RUP global = oficiais + ajudantes. RUP oficial = só os oficiais
+   (calculada quando os colaboradores do apontamento estão no
+   cadastro de efetivo). Categoria "indireto" (encarregado, mestre)
+   não entra no cálculo.
+   ============================================================ */
+
+/* jornada diária em horas; padrão 44 h semanais / 5 dias */
+export function jornada(){ return Number(estado.jornada) > 0 ? Number(estado.jornada) : 8.8; }
+
+/* mínimo de dias medidos para a RUP potencial ter sentido */
+export const DIAS_MINIMOS_POTENCIAL = 3;
+
+function chave(nome){ return String(nome || "").trim().toLowerCase(); }
+
+export function categoriaDe(nome){
+  const c = (estado.colaboradores || []).find(function(x){ return chave(x.nome) === chave(nome); });
+  return c ? c.categoria : null;
+}
+
+/* pessoas que contam no Hh de um apontamento */
+export function pessoasDoApontamento(a){
+  const nomes = (a.colaboradores || []).filter(function(n){ return categoriaDe(n) !== "indireto"; });
+  const efetivo = Number(a.efetivo) || 0;
+  const total = efetivo > 0 ? efetivo : nomes.length;
+  /* oficiais: só quando todos os nomes são conhecidos e batem com o efetivo */
+  const conhecidos = nomes.every(function(n){ return categoriaDe(n); });
+  const oficiais = nomes.length && conhecidos && (!efetivo || efetivo === nomes.length)
+    ? nomes.filter(function(n){ return categoriaDe(n) === "oficial"; }).length
+    : null;
+  return { total:total, oficiais:oficiais };
+}
+
+/* RUP por dia do serviço: apontamentos do mesmo dia são somados */
+export function diasRUP(s){
+  const porDia = new Map();
+  (s.apontamentos || []).forEach(function(a){
+    const qs = Number(a.quantidade) || 0;
+    const p = pessoasDoApontamento(a);
+    if(!a.data || qs <= 0 || p.total <= 0) return;
+    if(!porDia.has(a.data)) porDia.set(a.data, { data:a.data, qs:0, pessoas:0, hh:0, hhOf:0, oficialOk:true });
+    const d = porDia.get(a.data);
+    d.qs += qs;
+    d.pessoas += p.total;
+    d.hh += p.total * jornada();
+    if(p.oficiais === null) d.oficialOk = false; else d.hhOf += p.oficiais * jornada();
+  });
+  return Array.from(porDia.values())
+    .sort(function(a,b){ return a.data.localeCompare(b.data); })
+    .map(function(d){
+      d.rupd = d.hh / d.qs;
+      d.rupOf = d.oficialOk && d.hhOf ? d.hhOf / d.qs : null;
+      return d;
+    });
+}
+
+export function rupCumulativa(dias){
+  const hh = dias.reduce(function(n,d){ return n + d.hh; }, 0);
+  const qs = dias.reduce(function(n,d){ return n + d.qs; }, 0);
+  return qs > 0 ? hh / qs : null;
+}
+
+function mediana(v){
+  if(!v.length) return null;
+  const o = v.slice().sort(function(a,b){ return a - b; });
+  const m = Math.floor(o.length / 2);
+  return o.length % 2 ? o[m] : (o[m-1] + o[m]) / 2;
+}
+
+/* null enquanto houver menos de DIAS_MINIMOS_POTENCIAL dias medidos */
+export function rupPotencial(dias){
+  if(dias.length < DIAS_MINIMOS_POTENCIAL) return null;
+  const cum = rupCumulativa(dias);
+  return mediana(dias.filter(function(d){ return d.rupd <= cum; }).map(function(d){ return d.rupd; }));
+}
+
+/* Compara o dia i com o dia medido anterior do mesmo serviço.
+   Variação abaixo de 3% conta como "igual" (ruído de medição). */
+export function comparar(dias, i){
+  if(i <= 0 || !dias[i] || !dias[i-1]) return null;
+  const var_ = (dias[i].rupd - dias[i-1].rupd) / dias[i-1].rupd;
+  return {
+    anterior: dias[i-1],
+    variacao: var_,
+    situacao: Math.abs(var_) < 0.03 ? "igual" : (var_ < 0 ? "melhor" : "pior")
+  };
+}
+
+/* equipe para projetar: média de pessoas dos últimos 3 dias medidos */
+export function equipeAtual(dias){
+  const ult = dias.slice(-3);
+  if(!ult.length) return 0;
+  return ult.reduce(function(n,d){ return n + d.pessoas; }, 0) / ult.length;
+}
+
+/* Projeção do término: dias úteis para executar o saldo com a equipe
+   atual, numa dada RUP, contados a partir do próximo dia útil. */
+function projetarCom(saldo, rup, equipe, s){
+  if(!rup || !equipe || saldo <= 0) return null;
+  const hhDia = equipe * jornada();
+  const dias = Math.max(1, Math.ceil(saldo * rup / hhDia));
+  const inicio = somarDiasUteis(hojeISO(), 1);   /* próximo dia útil depois de hoje */
+  const fim = terminoPorDiasUteis(inicio, dias);
+  let folga = null;
+  if(s.fimPrev){
+    /* positivo = termina depois do previsto (atraso), negativo = antes */
+    folga = fim > s.fimPrev ? diasUteis(s.fimPrev, fim) - 1 : -(diasUteis(fim, s.fimPrev) - 1);
+  }
+  return { dias:dias, fim:fim, folga:folga, producaoDia: hhDia / rup };
+}
+
+export function analise(s){
+  const dias = diasRUP(s);
+  const cum = rupCumulativa(dias);
+  const pot = rupPotencial(dias);
+  const saldo = Math.max(0, quantPrevista(s) - quantExecutada(s));
+  const equipe = equipeAtual(dias);
+  return {
+    dias: dias,
+    cumulativa: cum,
+    potencial: pot,
+    perda: cum !== null && pot !== null ? cum - pot : null,
+    saldo: saldo,
+    equipe: equipe,
+    projAtual: projetarCom(saldo, cum, equipe, s),
+    projPotencial: projetarCom(saldo, pot, equipe, s)
+  };
+}
+
+/* meta diária sugerida para n pessoas: QS = Hh / RUP potencial
+   (sem potencial ainda, usa a cumulativa) */
+export function metaSugerida(s, nPessoas){
+  const a = analise(s);
+  const rup = a.potencial || a.cumulativa;
+  if(!rup || !nPessoas) return null;
+  return nPessoas * jornada() / rup;
+}
+
+/* "0,45 Hh/m²" */
+export function fmtRUP(v, unidade){
+  if(v === null || v === undefined || !isFinite(v)) return "—";
+  return v.toLocaleString("pt-BR", { minimumFractionDigits:2, maximumFractionDigits:2 }) + " Hh/" + (unidade || "un");
+}

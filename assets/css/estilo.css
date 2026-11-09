@@ -592,3 +592,43 @@ s{color:var(--tinta-3)}
   .cartao{break-inside:avoid;box-shadow:none;border-color:#999}
   .apont{break-inside:avoid}
 }
+
+/* ============================================================
+   PRODUTIVIDADE (RUP) E PROGRAMAÇÃO SEMANAL
+   ============================================================ */
+.rup-melhor{color:var(--folha);font-weight:600}
+.rup-pior{color:var(--tijolo);font-weight:600}
+.rup-grade{border:1px solid var(--linha);border-radius:var(--r);margin-bottom:10px}
+.rup-grade .dados__v{white-space:normal}
+.rup-proj{margin:6px 0 0;padding-left:18px;font-size:14px;line-height:1.6}
+
+.semana-barra{align-items:center}
+.semana-titulo{font-size:15.5px}
+.semana-grade{overflow-x:auto}
+.semana-grade .tabela{min-width:900px}
+.semana-grade th,.semana-grade td{vertical-align:top}
+.semana-col-servico{position:sticky;left:0;background:var(--papel-2);z-index:1;min-width:230px;max-width:280px;border-right:1px solid var(--linha)}
+.semana-grade thead .semana-col-servico{background:var(--papel-3)}
+.semana-hoje{background:var(--madeira-clara) !important}
+.semana-cel{min-width:130px;padding:6px !important}
+.semana-cel--feriado{color:var(--tinta-3);font-size:12.5px;background:var(--papel-3)}
+.semana-mais{
+  width:100%;min-height:44px;border:1px dashed var(--linha-forte);background:transparent;border-radius:var(--r);
+  font-size:20px;color:var(--tinta-3);cursor:pointer;
+}
+.semana-mais:hover{border-color:var(--marca-escura);color:var(--marca-escura)}
+.semana-celbtn{
+  width:100%;min-height:44px;text-align:left;display:flex;flex-direction:column;gap:2px;
+  border:1px solid var(--linha);background:var(--papel-2);border-left:4px solid var(--marca-escura);
+  border-radius:var(--r);padding:6px 8px;cursor:pointer;font-size:13px;color:var(--tinta);
+}
+.semana-celbtn:hover{border-color:var(--marca-escura)}
+.semana-grade tfoot td{font-size:13px;vertical-align:top}
+label.chip-loc{display:inline-flex;align-items:center;gap:6px;cursor:pointer}
+.semana-nav{display:flex;align-items:center;gap:8px}
+@media (max-width:700px){
+  .semana-col-servico{min-width:150px;max-width:170px;font-size:12.5px}
+  .semana-col-servico .tit{font-size:14px}
+  .semana-cel{min-width:118px}
+  .semana-nav{width:100%;justify-content:space-between}
+}

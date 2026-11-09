@@ -30,6 +30,9 @@
     <button class="aba" id="tabAcomp" role="tab" aria-selected="false" data-aba="acompanhamento">
       Acompanhamento <span class="conta" id="contaAcomp">0</span>
     </button>
+    <button class="aba" id="tabSemana" role="tab" aria-selected="false" data-aba="semana">
+      Semana <span class="conta" id="contaSemana">0</span>
+    </button>
     <button class="aba" id="tabPlano" role="tab" aria-selected="false" data-aba="planejamento">
       Planejamento <span class="conta" id="contaPlano">0</span>
     </button>
@@ -39,6 +42,7 @@
     <div class="usuario"><span id="usuarioAtivo"></span>
       <button class="btn btn--claro btn--p" id="btnSair">Sair</button></div>
     <button class="btn btn--claro btn--p" id="btnLocais">Locais</button>
+    <button class="btn btn--claro btn--p" id="btnEfetivo">Efetivo</button>
     <button class="btn btn--claro btn--p" id="btnDados">Dados</button>
     <button class="btn btn--marca" id="btnIrPlano">+ Nova tarefa</button>
   </div>
@@ -118,6 +122,11 @@
   </section>
 
   <!-- ======================= PLANEJAMENTO ======================= -->
+  <!-- ===================== PROGRAMAÇÃO SEMANAL ===================== -->
+  <section class="tela oculto" id="semana" role="tabpanel" aria-labelledby="tabSemana">
+    <div id="semanaConteudo"></div>
+  </section>
+
   <section class="tela oculto" id="planejamento" role="tabpanel" aria-labelledby="tabPlano">
     <div class="indicadores" id="indPlano"></div>
 

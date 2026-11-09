@@ -50,6 +50,10 @@ assets/
     importacao.js       importação de planilha CSV/XLSX com validação
     edicaoLote.js       edição em lote dos serviços filtrados
     codigos.js          correção de códigos repetidos
+    rup.js              produtividade pela RUP (Souza): cálculo e projeções
+    produtividade.js    bloco de produtividade na ficha do Acompanhamento
+    efetivo.js          cadastro do efetivo (colaboradores) e jornada
+    semana.js           aba Semana: programação semanal com equipe e meta
 migracoes/              scripts SQL do banco, numerados (rodar em ordem)
 ```
 
@@ -196,6 +200,25 @@ rodada, o sistema funciona normalmente e mostra um aviso no painel.
 - **Corrigir códigos repetidos** (Dados): renumera mostrando antes.
 - Serviços novos guardam a **linha de base** (`inicioBase`/`fimBase`), usada no
   Gantt da Fase 5.
+
+## Programação semanal e produtividade (RUP)
+
+Depende da migração `migracoes/003_efetivo_programacao.sql`.
+
+- **Efetivo** (botão no topo): colaboradores por nome, função, empresa e
+  categoria (oficial, ajudante ou indireto). Indireto não entra na RUP.
+  A jornada diária (padrão 8,8 h = 44 h em 5 dias) também fica ali.
+- **Aba Semana:** segunda a sexta; em cada dia, por serviço, a equipe e a
+  meta. "Sugerir meta" usa a RUP potencial. A célula mostra o realizado,
+  o percentual da meta e a RUP do dia. Avisa quem está em dois serviços no
+  mesmo dia. "Copiar semana anterior" repete a programação.
+- **Acompanhamento:** a equipe programada para hoje já entra no apontamento;
+  o bloco Produtividade mostra a RUP de cada dia, se melhorou ou piorou
+  em relação ao dia anterior, e projeta o término.
+- **RUP** (Ubiraci E. L. de Souza): RUP = Hh / quantidade. Diária,
+  cumulativa e potencial (mediana das diárias abaixo da cumulativa).
+  Menor é melhor. Precisa de quantidade e efetivo (ou colaboradores) no
+  apontamento. Detalhes em `assets/js/rup.js`.
 
 ## Regras de negócio que não devem mudar sem decisão da engenharia
 

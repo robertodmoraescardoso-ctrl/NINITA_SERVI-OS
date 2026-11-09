@@ -3,6 +3,7 @@ import { explicarErro } from "./erros.js";
 import { estado } from "./estado.js";
 import { prepararFotos } from "./fotos.js";
 import { carregarLocalizacoes } from "./localizacoes.js";
+import { carregarEfetivo } from "./efetivo.js";
 import { trocarAba } from "./navegacao.js";
 import { cfgLocal, CHAVE_SB, conectar, configurado, definirConfig, guardarCfgLocal, ler, lerTudo, problemaConfig, sb, URL_SB } from "./supabase.js";
 import { $, aviso, esc, fecharModal } from "./ui.js";
@@ -100,6 +101,7 @@ export async function carregarTudo(){
     estado.nomeObra = cfg ? cfg.valor : "Torre A · Torre BC · Periferia";
     $("#nomeObra").value = estado.nomeObra;
     await carregarLocalizacoes();   /* não lança erro: sem a migração, só desliga a localização */
+    await carregarEfetivo();        /* idem: sem a migração 003, só desliga a aba Semana */
     await prepararFotos();
     mostrarUsuario();
     trocarAba("painel");

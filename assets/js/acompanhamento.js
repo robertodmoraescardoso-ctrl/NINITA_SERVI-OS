@@ -5,6 +5,9 @@ import { textoOnde } from "./inferencia.js";
 import { textoLocalizacao } from "./localizacoes.js";
 import { guardarFoto, srcFoto } from "./fotos.js";
 import { pintarTudo } from "./navegacao.js";
+import { blocoProdutividade } from "./produtividade.js";
+import { nomesDe, progDe } from "./semana.js";
+import { ativos } from "./efetivo.js";
 import { avancoFisico, dataReferencia, diasAtraso, duracao, estaAtrasado, num, pessoasDo, quantExecutada, quantPrevista, STATUS, textoQuant } from "./servicos.js";
 import { apagar, salvar } from "./supabase.js";
 import { $, $$, aviso, esc, id } from "./ui.js";
@@ -124,6 +127,7 @@ export function pintarDetalhe(){
         '<div class="campo">' +
           '<label for="apEfetivo">Efetivo no serviço</label>' +
           '<input type="number" id="apEfetivo" min="0" step="1" placeholder="nº de pessoas">' +
+          '<span class="dica" id="apProgramado"></span>' +
         '</div>' +
 
         (quantPrevista(s) ?
@@ -161,6 +165,8 @@ export function pintarDetalhe(){
       '</div>' +
     '</div>' +
 
+    blocoProdutividade(s) +
+
     /* ---- histórico ---- */
     '<div class="bloco">' +
       '<div class="bloco__tit"><span class="rotulo">Histórico</span>' +
@@ -170,8 +176,24 @@ export function pintarDetalhe(){
   '</div>';
 
   montarChips();
+  preencherProgramado(s);
   rascunho.fotos = [];
   pintarMiniaturas();
+}
+
+/* Se o serviço está na programação de hoje (aba Semana), a equipe
+   programada já entra como colaboradores do apontamento. */
+function preencherProgramado(s){
+  if(!estado.progAtivo) return;
+  const p = progDe(s.id, hojeISO());
+  if(!p) return;
+  const nomes = nomesDe(p);
+  rascunho.colaboradores = nomes.slice();
+  pintarChips();
+  pintarSugestoes();
+  const alvo = $("#apProgramado");
+  if(alvo) alvo.textContent = "Programado hoje: " + nomes.length + " pessoa(s)" +
+    (p.meta_quantidade ? ", meta " + num(p.meta_quantidade) + " " + (s.unidade || "") : "") + ".";
 }
 
 export function celula(rot, val){
@@ -236,14 +258,16 @@ export function pintarChips(){
 export function pintarSugestoes(){
   const alvo = $("#sugestoesColab");
   if(!alvo) return;
-  const todos = new Set();
+  /* primeiro o efetivo cadastrado, depois os nomes já usados em apontamentos */
+  const cadastro = ativos().map(function(c){ return c.nome; });
+  const outros = new Set();
   estado.servicos.forEach(function(s){
-    pessoasDo(s).forEach(function(p){ todos.add(p); });
+    pessoasDo(s).forEach(function(p){ if(cadastro.indexOf(p) === -1) outros.add(p); });
   });
-  const nomes = Array.from(todos)
+  const ordenar = function(a,b){ return a.localeCompare(b,"pt-BR"); };
+  const nomes = cadastro.slice().sort(ordenar).concat(Array.from(outros).sort(ordenar))
     .filter(function(n){ return rascunho.colaboradores.indexOf(n) === -1; })
-    .sort(function(a,b){ return a.localeCompare(b,"pt-BR"); })
-    .slice(0, 14);
+    .slice(0, 30);
   alvo.innerHTML = nomes.length
     ? '<span class="dica" style="align-self:center;margin-right:2px">já cadastrados:</span>' +
       nomes.map(function(n){ return '<button type="button" class="sugestao" data-sug="' + esc(n) + '">' + esc(n) + '</button>'; }).join("")
