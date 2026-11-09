@@ -207,7 +207,9 @@ Depende da migração `migracoes/003_efetivo_programacao.sql`.
 
 - **Efetivo** (botão no topo): colaboradores por nome, função, empresa e
   categoria (oficial, ajudante ou indireto). Indireto não entra na RUP.
-  A jornada diária (padrão 8,8 h = 44 h em 5 dias) também fica ali.
+  Importa a planilha do RH (.xls/.xlsx/.csv) lendo só Nome e Função;
+  homônimos recebem a função entre parênteses. A jornada por dia da semana
+  (padrão 9 h de segunda a quinta e 8 h na sexta) também fica ali.
 - **Aba Semana:** segunda a sexta; em cada dia, por serviço, a equipe e a
   meta. "Sugerir meta" usa a RUP potencial. A célula mostra o realizado,
   o percentual da meta e a RUP do dia. Avisa quem está em dois serviços no

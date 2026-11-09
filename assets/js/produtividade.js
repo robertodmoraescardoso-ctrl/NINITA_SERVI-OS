@@ -1,5 +1,5 @@
 import { fmtLongo } from "./datas.js";
-import { analise, comparar, DIAS_MINIMOS_POTENCIAL, fmtRUP, jornada } from "./rup.js";
+import { analise, comparar, DIAS_MINIMOS_POTENCIAL, fmtRUP, textoJornada } from "./rup.js";
 import { num, quantPrevista } from "./servicos.js";
 import { esc } from "./ui.js";
 
@@ -55,8 +55,8 @@ export function blocoProdutividade(s){
             '<td class="num">' + fmtRUP(x.d.rupd, un) + '</td><td>' + (x.c ? textoCmp(x.c) : '<span class="dica">primeiro dia</span>') + '</td></tr>';
         }).join("") +
         '</tbody></table></div>' +
-        '<p class="dica" style="margin:6px 0 0">RUP = homens-hora por ' + esc(un) + ' (jornada de ' + String(jornada()).replace(".", ",") +
-          ' h). Menor é melhor. Metodologia: Ubiraci E. L. de Souza.</p>';
+        '<p class="dica" style="margin:6px 0 0">RUP = homens-hora por ' + esc(un) + ' (jornada ' + textoJornada() +
+          '). Menor é melhor. Metodologia: Ubiraci E. L. de Souza.</p>';
     }
   }
   return '<div class="bloco"><div class="bloco__tit"><span class="rotulo">Produtividade (RUP)</span></div>' + corpo + '</div>';

@@ -1,4 +1,4 @@
-import { diasUteis, hojeISO, somarDiasUteis, terminoPorDiasUteis } from "./datas.js";
+import { diasUteis, hojeISO, somarDiasUteis } from "./datas.js";
 import { estado } from "./estado.js";
 import { quantExecutada, quantPrevista } from "./servicos.js";
 
@@ -9,7 +9,7 @@ import { quantExecutada, quantPrevista } from "./servicos.js";
      RUP = Hh / QS      homens-hora gastos por unidade de serviço
                         (ex.: 0,45 Hh/m²). QUANTO MENOR, MELHOR.
 
-     Hh do dia          = pessoas no serviço x jornada diária (h)
+     Hh do dia          = pessoas no serviço x jornada daquele dia (h)
      QS do dia          = quantidade executada lançada no apontamento
 
      RUP diária         = Hh do dia / QS do dia
@@ -28,8 +28,33 @@ import { quantExecutada, quantPrevista } from "./servicos.js";
    não entra no cálculo.
    ============================================================ */
 
-/* jornada diária em horas; padrão 44 h semanais / 5 dias */
-export function jornada(){ return Number(estado.jornada) > 0 ? Number(estado.jornada) : 8.8; }
+/* Jornada por dia da semana, em horas: [dom, seg, ter, qua, qui, sex, sáb].
+   Padrão da obra: 9 h de segunda a quinta, 8 h na sexta. Sábado e
+   domingo só contam se houver apontamento (hora extra). Configurável
+   na tela Efetivo (config "jornada_semana"). */
+export const JORNADA_PADRAO = [0, 9, 9, 9, 9, 8, 8];
+
+export function jornadaSemana(){
+  const j = estado.jornadaSemana;
+  return Array.isArray(j) && j.length === 7 ? j : JORNADA_PADRAO;
+}
+
+/* horas de uma pessoa naquela data */
+export function jornadaDoDia(iso){
+  const p = String(iso || "").split("-");
+  const dia = p.length === 3 ? new Date(+p[0], +p[1] - 1, +p[2]).getDay() : 1;
+  const h = Number(jornadaSemana()[dia]);
+  return h > 0 ? h : Number(jornadaSemana()[5]) || 8;   /* domingo sem jornada: usa a de sexta */
+}
+
+/* "9 h seg–qui, 8 h sex" — para os textos de ajuda */
+export function textoJornada(){
+  const j = jornadaSemana();
+  const n = function(v){ return String(v).replace(".", ","); };
+  return (j[1] === j[2] && j[2] === j[3] && j[3] === j[4])
+    ? n(j[1]) + " h seg–qui, " + n(j[5]) + " h sex"
+    : ["seg","ter","qua","qui","sex"].map(function(d, i){ return n(j[i+1]) + " h " + d; }).join(", ");
+}
 
 /* mínimo de dias medidos para a RUP potencial ter sentido */
 export const DIAS_MINIMOS_POTENCIAL = 3;
@@ -65,8 +90,8 @@ export function diasRUP(s){
     const d = porDia.get(a.data);
     d.qs += qs;
     d.pessoas += p.total;
-    d.hh += p.total * jornada();
-    if(p.oficiais === null) d.oficialOk = false; else d.hhOf += p.oficiais * jornada();
+    d.hh += p.total * jornadaDoDia(a.data);
+    if(p.oficiais === null) d.oficialOk = false; else d.hhOf += p.oficiais * jornadaDoDia(a.data);
   });
   return Array.from(porDia.values())
     .sort(function(a,b){ return a.data.localeCompare(b.data); })
@@ -116,20 +141,32 @@ export function equipeAtual(dias){
   return ult.reduce(function(n,d){ return n + d.pessoas; }, 0) / ult.length;
 }
 
-/* Projeção do término: dias úteis para executar o saldo com a equipe
-   atual, numa dada RUP, contados a partir do próximo dia útil. */
+/* Projeção do término: a partir do próximo dia útil, soma dia a dia
+   os Hh disponíveis (equipe x jornada daquele dia: 9 h seg–qui, 8 h
+   sex) até cobrir os Hh necessários = saldo x RUP. */
 function projetarCom(saldo, rup, equipe, s){
   if(!rup || !equipe || saldo <= 0) return null;
-  const hhDia = equipe * jornada();
-  const dias = Math.max(1, Math.ceil(saldo * rup / hhDia));
-  const inicio = somarDiasUteis(hojeISO(), 1);   /* próximo dia útil depois de hoje */
-  const fim = terminoPorDiasUteis(inicio, dias);
+  const necessario = saldo * rup;
+  let dia = somarDiasUteis(hojeISO(), 1);   /* próximo dia útil depois de hoje */
+  let acumulado = 0, dias = 0, fim = dia;
+  while(acumulado < necessario && dias < 1000){
+    acumulado += equipe * jornadaDoDia(dia);
+    dias++; fim = dia;
+    dia = somarDiasUteis(dia, 1);
+  }
+  const hhMedio = equipe * mediaDiasUteis();
   let folga = null;
   if(s.fimPrev){
     /* positivo = termina depois do previsto (atraso), negativo = antes */
     folga = fim > s.fimPrev ? diasUteis(s.fimPrev, fim) - 1 : -(diasUteis(fim, s.fimPrev) - 1);
   }
-  return { dias:dias, fim:fim, folga:folga, producaoDia: hhDia / rup };
+  return { dias:dias, fim:fim, folga:folga, producaoDia: hhMedio / rup };
+}
+
+/* jornada média de segunda a sexta (para a produção diária média) */
+function mediaDiasUteis(){
+  const j = jornadaSemana();
+  return (Number(j[1]) + Number(j[2]) + Number(j[3]) + Number(j[4]) + Number(j[5])) / 5;
 }
 
 export function analise(s){
@@ -150,13 +187,14 @@ export function analise(s){
   };
 }
 
-/* meta diária sugerida para n pessoas: QS = Hh / RUP potencial
-   (sem potencial ainda, usa a cumulativa) */
-export function metaSugerida(s, nPessoas){
+/* meta sugerida para n pessoas num dia: QS = n x jornada do dia / RUP
+   potencial (sem potencial ainda, usa a cumulativa). Na sexta, com 8 h,
+   a meta sai menor que de segunda a quinta, com 9 h. */
+export function metaSugerida(s, nPessoas, data){
   const a = analise(s);
   const rup = a.potencial || a.cumulativa;
   if(!rup || !nPessoas) return null;
-  return nPessoas * jornada() / rup;
+  return nPessoas * jornadaDoDia(data || hojeISO()) / rup;
 }
 
 /* "0,45 Hh/m²" */

@@ -4,7 +4,7 @@ import { mostrarErro } from "./erros.js";
 import { estado } from "./estado.js";
 import { textoOnde } from "./inferencia.js";
 import { pintarTudo } from "./navegacao.js";
-import { analise, comparar, diasRUP, fmtRUP, metaSugerida } from "./rup.js";
+import { analise, comparar, diasRUP, fmtRUP, jornadaDoDia, metaSugerida, textoJornada } from "./rup.js";
 import { num, quantPrevista, STATUS } from "./servicos.js";
 import { sb } from "./supabase.js";
 import { $, $$, aviso, esc, fecharModal } from "./ui.js";
@@ -257,11 +257,29 @@ export function sugerirMeta(){
   if(!s){ aviso("Escolha o serviço."); return; }
   const diretos = Array.from(editor.sel).filter(function(id){ const c = colaborador(id); return c && c.categoria !== "indireto"; }).length;
   if(!diretos){ aviso("Escolha a equipe primeiro."); return; }
-  const m = metaSugerida(s, diretos);
+  const dias = $$(".prog-dia").filter(function(c){ return c.checked; }).map(function(c){ return c.value; });
+  const primeiro = editor.data || dias[0];
+  const m = metaSugerida(s, diretos, primeiro);
   if(!m){ $("#progSugestao").textContent = "Ainda não há produção medida neste serviço (lance quantidade e efetivo nos apontamentos)."; return; }
   const a = analise(s);
   $("#progMeta").value = Math.round(m * 10) / 10;
-  $("#progSugestao").textContent = diretos + " pessoa(s) x jornada / " + (a.potencial ? "RUP potencial " + fmtRUP(a.potencial, s.unidade) : "RUP cumulativa " + fmtRUP(a.cumulativa, s.unidade) + " (potencial a partir de 3 dias medidos)");
+  /* lembra que a meta veio da sugestão: ao salvar, cada dia recebe a
+     sua (sexta, com 8 h, fica menor que segunda a quinta, com 9 h) */
+  editor.metaAuto = { valor:Number($("#progMeta").value), diretos:diretos };
+  $("#progSugestao").textContent = diretos + " pessoa(s) x " + String(jornadaDoDia(primeiro)).replace(".", ",") + " h / " +
+    (a.potencial ? "RUP potencial " + fmtRUP(a.potencial, s.unidade) : "RUP cumulativa " + fmtRUP(a.cumulativa, s.unidade) + " (potencial a partir de 3 dias medidos)") +
+    (dias.length > 1 ? ". Cada dia recebe a meta da sua jornada (" + textoJornada() + ")." : "");
+}
+
+/* meta de cada dia: a digitada, ou — se veio da sugestão e não foi
+   alterada — recalculada com a jornada daquele dia */
+function metaDoDia(s, d, metaTxt){
+  if(metaTxt === "") return null;
+  if(editor.metaAuto && Number(metaTxt) === editor.metaAuto.valor){
+    const m = metaSugerida(s, editor.metaAuto.diretos, d);
+    if(m) return Math.round(m * 10) / 10;
+  }
+  return Number(metaTxt);
 }
 
 function falha(r){ if(r.error) throw r.error; return r.data; }
@@ -282,11 +300,12 @@ export async function salvarProgramacao(){
   try{
     for(const d of dias){
       const ja = progDe(s.id, d);
+      const doDia = Object.assign({}, campos, { meta_quantidade: metaDoDia(s, d, metaTxt) });
       if(ja){
-        falha(await sb.from("programacao").update(campos).eq("id", ja.id));
-        Object.assign(ja, campos);
+        falha(await sb.from("programacao").update(doDia).eq("id", ja.id));
+        Object.assign(ja, doDia);
       } else {
-        const r = falha(await sb.from("programacao").insert(Object.assign({ servico_id:s.id, data:d }, campos)).select());
+        const r = falha(await sb.from("programacao").insert(Object.assign({ servico_id:s.id, data:d }, doDia)).select());
         estado.programacao.push(r[0]);
       }
     }

@@ -20,7 +20,7 @@ import { baixar, csv } from "./dados.js";
 /* Leitor de Excel (SheetJS), carregado só quando alguém envia .xlsx.
    É a biblioteca de referência para ler .xlsx no navegador; vem da
    CDN oficial do fabricante, versão fixa. */
-const SHEETJS = "https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js";
+export const SHEETJS = "https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js";
 
 const COLUNAS = ["Título","Frente","Pavimento","Detalhe do local","Disciplina","Início","Término previsto",
                  "Duração (dias úteis)","Quantidade","Unidade","Responsável","Código","Escopo"];
@@ -79,7 +79,7 @@ export function abrirImportacao(){
 }
 
 /* ---------- leitura do arquivo ---------- */
-function carregarScript(url){
+export function carregarScript(url){
   return new Promise(function(ok, falha){
     if(window.XLSX) return ok();
     const s = document.createElement("script");

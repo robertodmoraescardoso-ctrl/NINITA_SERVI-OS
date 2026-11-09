@@ -23,6 +23,6 @@ export const estado = {
   programacao: [],          // linhas da tabela programacao da semana carregada
   progAtivo: false,         // false enquanto a migração 003 não rodar
   progErro: "",
-  jornada: 8.8,             // horas por dia de cada pessoa (config "jornada_horas")
+  jornadaSemana: null,      // horas por dia da semana [dom..sáb] (config "jornada_semana"); null = padrão 9 h seg–qui, 8 h sex
   semanaInicio: ""          // segunda-feira da semana mostrada na aba Semana
 };

@@ -12,7 +12,7 @@ import { abrirLote, gravarLote } from "./lote.js";
 import { abrirImportacao, baixarModelo, gravarImportacao, receberPlanilha } from "./importacao.js";
 import { abrirEdicaoLote, acaoEdicaoLote, aplicarEdicaoLote } from "./edicaoLote.js";
 import { abrirCodigos, corrigirCodigos } from "./codigos.js";
-import { abrirEfetivo, acaoEfetivo, buscarEfetivo, categoriaPelaFuncao, mudarEfetivo } from "./efetivo.js";
+import { abrirEfetivo, acaoEfetivo, buscarEfetivo, categoriaPelaFuncao, mudarEfetivo, receberPlanilhaEfetivo } from "./efetivo.js";
 import { acaoSemana, alternarPessoa, buscarPessoa, salvarProgramacao } from "./semana.js";
 import { pintarTudo, trocarAba } from "./navegacao.js";
 import { abrirTriagem, acaoTriagem } from "./triagem.js";
@@ -162,6 +162,7 @@ document.addEventListener("change", function(ev){
   if(t.id === "arquivoFotos"){ receberArquivos(t.files); t.value = ""; }
   if(t.id === "arquivoBackup" && t.files[0]){ restaurar(t.files[0]); t.value = ""; }
   if(t.id === "arquivoPlanilha" && t.files[0]){ receberPlanilha(t.files[0]); t.value = ""; }
+  if(t.id === "efArquivo" && t.files[0]){ receberPlanilhaEfetivo(t.files[0]); t.value = ""; }
   if(t.hasAttribute("data-ef-cat") || t.hasAttribute("data-ef-ativo")) mudarEfetivo(t);
   if(t.id === "statusRapido") mudarStatus(t.value);
   if(t.id === "nomeObra"){
