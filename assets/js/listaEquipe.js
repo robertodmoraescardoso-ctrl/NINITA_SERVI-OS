@@ -1,4 +1,4 @@
-import { ativos } from "./efetivo.js";
+import { abrirEfetivo, ativos } from "./efetivo.js";
 import { estado } from "./estado.js";
 import { $, esc } from "./ui.js";
 
@@ -7,11 +7,14 @@ import { $, esc } from "./ui.js";
    Usada no cadastro de serviço. Os nomes escolhidos continuam
    gravados como antes (lista de nomes no campo "equipe"), num
    campo escondido #fEquipe, então o resto do sistema não muda.
-   Sem efetivo cadastrado, volta a ser o campo de texto livre.
+   Com o efetivo vazio, a lista avisa e leva ao cadastro.
    ------------------------------------------------------------ */
 const sel = { nomes:new Set(), busca:"" };
 
-export function usaListaEquipe(){ return estado.progAtivo && ativos().length > 0; }
+/* A lista aparece sempre que o efetivo existe no banco (migração 003),
+   mesmo vazio: nesse caso ela avisa e leva ao cadastro do efetivo.
+   O texto livre só volta se a migração 003 não tiver rodado. */
+export function usaListaEquipe(){ return estado.progAtivo; }
 
 export function htmlEquipe(nomes){
   if(!usaListaEquipe()){
@@ -55,13 +58,16 @@ function pintarLista(){
     .filter(function(p){ return !termo || (p.nome + " " + p.funcao).toLowerCase().indexOf(termo) !== -1; })
     .forEach(function(p){ if(!grupos.has(p.funcao)) grupos.set(p.funcao, []); grupos.get(p.funcao).push(p); });
   const funcoes = Array.from(grupos.keys()).sort(function(a,b){ return a.localeCompare(b, "pt-BR"); });
-  $("#fEquipeLista").innerHTML = funcoes.length ? funcoes.map(function(f){
+  const vazio = ativos().length ? "" :
+    '<div class="aviso" style="margin:4px 0 8px">O efetivo ainda está vazio. Importe a planilha do RH no botão Efetivo para escolher as pessoas aqui.' +
+    '<p style="margin:6px 0 0"><button type="button" class="btn btn--p btn--marca" data-eq="efetivo">Abrir o Efetivo</button></p></div>';
+  $("#fEquipeLista").innerHTML = vazio + (funcoes.length ? funcoes.map(function(f){
     return '<div class="lista-suspensa__grupo"><span class="dica">' + esc(f) + '</span>' +
       grupos.get(f).sort(function(a,b){ return a.nome.localeCompare(b.nome, "pt-BR"); }).map(function(p){
         return '<label class="lista-suspensa__item"><input type="checkbox" class="eq-marca" value="' + esc(p.nome) + '"' +
           (sel.nomes.has(p.nome) ? " checked" : "") + '> ' + esc(p.nome) + '</label>';
       }).join("") + '</div>';
-  }).join("") : '<p class="dica">Ninguém com esse nome ou função.</p>';
+  }).join("") : (ativos().length ? '<p class="dica">Ninguém com esse nome ou função.</p>' : ''));
 }
 
 function pintarEscolhidos(){
@@ -89,6 +95,10 @@ function aoClicar(ev){
   if(!b) return;
   if(b.hasAttribute("data-eq-tirar")){ sel.nomes.delete(b.getAttribute("data-eq-tirar")); pintarLista(); pintarEscolhidos(); }
   if(b.getAttribute("data-eq") === "fechar") abrirFechar(false);
+  if(b.getAttribute("data-eq") === "efetivo"){
+    if(confirm("Abrir o Efetivo fecha este cadastro sem salvar. Continuar?")) abrirEfetivo();
+    return;
+  }
   if(b.getAttribute("data-eq") === "limpar"){ sel.nomes.clear(); pintarLista(); pintarEscolhidos(); }
 }
 
