@@ -54,6 +54,7 @@ assets/
     produtividade.js    bloco de produtividade na ficha do Acompanhamento
     efetivo.js          cadastro do efetivo (colaboradores) e jornada
     semana.js           aba Semana: programação semanal com equipe e meta
+    listaEquipe.js      lista suspensa do efetivo na "Equipe prevista" do cadastro
 migracoes/              scripts SQL do banco, numerados (rodar em ordem)
 ```
 

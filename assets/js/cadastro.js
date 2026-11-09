@@ -4,6 +4,7 @@ import { estado } from "./estado.js";
 import { definirLigacoes, ligacoesDe } from "./localizacoes.js";
 import { pintarTudo } from "./navegacao.js";
 import { idsSelecionados, montarSeletor } from "./seletorLocal.js";
+import { htmlEquipe, montarEquipe } from "./listaEquipe.js";
 import { abrirTriagem } from "./triagem.js";
 import { codigoEmUso, fotosDo, novoServico, proximoCodigo, STATUS, UNIDADES } from "./servicos.js";
 import { apagar, salvar } from "./supabase.js";
@@ -107,7 +108,7 @@ export function abrirFormServico(idServico, comoTarefa, opcoes){
           campo("fUnidade", "Unidade", '<input type="text" id="fUnidade" list="listaUnidades" value="' + esc(d.unidade || "") + '" placeholder="m²">' +
             '<datalist id="listaUnidades">' + UNIDADES.map(function(o){ return '<option value="' + o + '">'; }).join("") + '</datalist>') +
           campo("fResp", "Responsável", '<input type="text" id="fResp" value="' + esc(d.responsavel) + '" placeholder="Encarregado ou engenheiro">') +
-          campo("fEquipe", "Equipe prevista", '<input type="text" id="fEquipe" value="' + esc((d.equipe || []).join(", ")) + '" placeholder="Nomes separados por vírgula">', "campo--largo") +
+          campo("fEquipe", "Equipe prevista", htmlEquipe(d.equipe), "campo--largo") +
         '</div></fieldset>' +
 
         '<fieldset class="grupo"><legend>Escopo</legend>' +
@@ -131,6 +132,7 @@ export function abrirFormServico(idServico, comoTarefa, opcoes){
   const modal = $("#modais .modal");
   modal.addEventListener("input", aoDigitar);
   modal.addEventListener("change", aoDigitar);
+  montarEquipe(modal, d.equipe);
   atualizarDuracao();
   setTimeout(function(){ const t = $("#fTitulo"); if(t){ t.focus(); if(origem) t.select(); } }, 40);
 }
