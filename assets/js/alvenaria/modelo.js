@@ -18,7 +18,8 @@ export const est = {
   equipeSugerida: [],
   /* tela */
   pav: "TE", aba: "mapa", vista: "planta", zoom: 3, plantaDe: null,
-  filtro: "todas", busca: "", aberta: null, podeGravar: false, aviso: ""
+  filtro: "todas", busca: "", aberta: null,
+  conectado: false, podeGravar: false, aviso: ""
 };
 
 export const AVISOS = {

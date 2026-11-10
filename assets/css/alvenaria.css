@@ -1,0 +1,370 @@
+/* ============================================================
+   ALVENARIA DE VEDAÇÃO — estilos próprios da página
+
+   Complementa o estilo.css: cores, fonte, botões, abas e carimbo
+   vêm de lá. Aqui ficam só a planta, o mosaico e a ficha.
+
+   Celular é o caso principal: quem aponta mede em pé no andar.
+   Por isso alvos de toque grandes, campos com 16px (abaixo disso
+   o Safari do iPhone dá zoom sozinho ao focar) e respeito às
+   áreas seguras do notch e da barra de gestos.
+   ============================================================ */
+
+:root{
+  /* situação da parede, na paleta da obra */
+  --alv-zero:      var(--pedra);
+  --alv-andamento: var(--ambar);
+  --alv-ok:        var(--folha);
+  --alv-atraso:    var(--tijolo);
+  --alv-semquant:  var(--madeira);
+
+  --alv-zero-t:      rgba(138,141,121,.30);
+  --alv-andamento-t: rgba(192,129,85,.30);
+  --alv-ok-t:        rgba(79,107,58,.26);
+  --alv-atraso-t:    rgba(160,71,58,.24);
+  --alv-semquant-t:  rgba(142,90,54,.22);
+
+  --alv-toque: 44px;   /* alvo mínimo de toque */
+}
+
+/* ------------------------------------------------------------
+   Áreas seguras (iPhone com notch, Android com barra de gestos)
+   ------------------------------------------------------------ */
+body.alvenaria{
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+  overflow-x: hidden;
+}
+body.alvenaria .carimbo{ padding-top: calc(10px + env(safe-area-inset-top, 0px)); }
+
+/* O index embrulha tudo em .tela, que dá a margem lateral. Aqui o
+   conteúdo fica solto no main, então a margem vem daqui — sem ela
+   os indicadores encostam na borda e vazam no celular. */
+body.alvenaria main{
+  padding:16px 14px calc(28px + env(safe-area-inset-bottom, 0px));
+}
+
+@media (max-width:700px){
+  body.alvenaria main{ padding:12px 12px calc(44px + env(safe-area-inset-bottom, 0px)); }
+  /* duas colunas cabem em 375px; três espremem o número */
+  body.alvenaria .indicadores{ grid-template-columns:repeat(2, minmax(0, 1fr)); gap:8px; }
+  body.alvenaria .ind{ padding:9px 11px; }
+  body.alvenaria .ind__n{ font-size:22px; }
+  /* com um botão só, esticar a linha inteira desperdiça uma faixa da tela */
+  body.alvenaria .carimbo__acoes{ justify-content:flex-end; }
+  body.alvenaria .carimbo__acoes .btn{ flex:0 0 auto; }
+  body.alvenaria .aba{ min-height: var(--alv-toque); }
+}
+
+/* o detalhe do indicador precisa de linha própria: .ind__r é inline */
+.ind__d{ display:block; font-size:10.5px; color:var(--tinta-3); margin-top:2px; line-height:1.35; }
+
+/* ------------------------------------------------------------
+   Barra de pavimentos — rolagem horizontal com encaixe
+   ------------------------------------------------------------ */
+.alv-pavs{
+  display:flex; gap:6px; overflow-x:auto; padding:2px 0 10px;
+  scroll-snap-type:x proximity; -webkit-overflow-scrolling:touch;
+  scrollbar-width:thin;
+}
+.alv-pav{
+  flex:none; scroll-snap-align:start;
+  display:flex; flex-direction:column; align-items:flex-start; gap:1px;
+  min-width:96px; min-height:var(--alv-toque);
+  padding:7px 12px 6px; border:1px solid var(--linha);
+  border-radius:var(--r); background:var(--papel-2); color:var(--tinta);
+  font-family:var(--corpo); text-align:left; cursor:pointer;
+}
+.alv-pav b{ font-size:13.5px; font-weight:600; white-space:nowrap; }
+.alv-pav i{ font-style:normal; font-size:11px; color:var(--tinta-3); font-variant-numeric:tabular-nums; }
+.alv-pav[aria-pressed="true"]{ background:var(--marca-escura); border-color:var(--marca-escura); color:#fff; }
+.alv-pav[aria-pressed="true"] i{ color:rgba(255,255,255,.82); }
+
+/* ------------------------------------------------------------
+   Legenda e alternador planta/mosaico
+   ------------------------------------------------------------ */
+.alv-legenda{
+  display:flex; gap:12px; flex-wrap:wrap; align-items:center;
+  font-size:11.5px; color:var(--tinta-3); margin:2px 0 12px;
+}
+.alv-legenda span{ display:inline-flex; align-items:center; gap:5px; }
+.alv-cor{ width:10px; height:10px; border-radius:2px; flex:none; }
+.alv-vtoggle{
+  display:inline-flex; margin-left:auto;
+  border:1px solid var(--linha); border-radius:var(--r); overflow:hidden;
+}
+.alv-vtoggle button{
+  border:0; background:var(--papel-2); color:var(--tinta-2);
+  padding:6px 13px; min-height:34px; font-family:var(--corpo);
+  font-size:12px; font-weight:600; cursor:pointer;
+}
+.alv-vtoggle button[aria-pressed="true"]{ background:var(--tinta); color:var(--papel-2); }
+@media (max-width:700px){
+  .alv-vtoggle{ margin-left:0; width:100%; }
+  .alv-vtoggle button{ flex:1 1 50%; min-height:var(--alv-toque); }
+}
+
+/* ------------------------------------------------------------
+   Planta de 1ª fiada
+   ------------------------------------------------------------ */
+.alv-planta{
+  border:1px solid var(--linha); border-radius:var(--r);
+  background:var(--papel-2); overflow:hidden;
+}
+.alv-zoom{
+  display:flex; gap:7px; align-items:center; flex-wrap:wrap;
+  padding:8px 10px; border-bottom:1px solid var(--linha);
+}
+.alv-zoom button{
+  border:1px solid var(--linha-forte); background:var(--papel-3); color:var(--tinta);
+  border-radius:var(--r); min-width:40px; min-height:40px;
+  font-size:18px; line-height:1; display:grid; place-items:center; cursor:pointer;
+}
+.alv-zoom button.alv-largo{ width:auto; padding:0 14px; font-size:12.5px; font-weight:600; }
+.alv-zoom .alv-prancha{
+  font-size:11px; color:var(--tinta-3); flex:1 1 120px; min-width:0;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+
+/* A rolagem fica presa aqui dentro: overscroll-behavior impede
+   que arrastar a planta puxe a página ou dispare o "puxar para
+   atualizar" do Chrome no Android. */
+.alv-scroll{
+  overflow:auto; max-height:min(68vh, 620px); background:#fff;
+  touch-action:pan-x pan-y; overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+}
+@media (max-width:700px){ .alv-scroll{ max-height:62vh; } }
+
+.alv-tela{ position:relative; line-height:0; }
+.alv-tela img{ display:block; width:100%; height:auto; }
+
+.alv-pino{
+  position:absolute; transform:translate(-50%,-50%);
+  width:var(--alv-pino-d, 14px); height:var(--alv-pino-d, 14px);
+  border-radius:50%; border:1.5px solid #fff; padding:0;
+  background:var(--alv-zero); box-shadow:0 0 0 1px rgba(46,49,40,.55);
+  cursor:pointer; -webkit-tap-highlight-color:transparent;
+}
+.alv-pino.ok{ background:var(--alv-ok); }
+.alv-pino.andamento{ background:var(--alv-andamento); }
+.alv-pino.atraso{ background:var(--alv-atraso); }
+.alv-pino.semquant{ background:var(--alv-semquant); }
+.alv-pino.apagado{ opacity:.2; }
+.alv-pino.alvo{ box-shadow:0 0 0 3px var(--marca-escura), 0 0 0 5px rgba(255,255,255,.95); }
+/* área de toque maior que o desenho, sem engordar o pino */
+.alv-pino::after{ content:""; position:absolute; inset:-11px; border-radius:50%; }
+.alv-pino .alv-rot{
+  position:absolute; left:50%; bottom:100%; transform:translate(-50%,-4px);
+  font-size:9.5px; font-weight:700; font-variant-numeric:tabular-nums;
+  background:rgba(255,255,255,.94); color:var(--tinta);
+  border-radius:2px; padding:0 3px; white-space:nowrap; display:none;
+  pointer-events:none; box-shadow:0 0 0 1px rgba(46,49,40,.3);
+}
+.alv-tela.rotulada .alv-pino .alv-rot{ display:block; }
+.alv-nota{ font-size:12.5px; color:var(--tinta-3); padding:8px 10px; border-top:1px solid var(--linha); }
+
+/* ------------------------------------------------------------
+   Mosaico — uma peça por parede, largura pela área de projeto
+   ------------------------------------------------------------ */
+.alv-secao{ margin-bottom:18px; }
+.alv-secao__cab{ display:flex; align-items:baseline; gap:8px; margin-bottom:7px; }
+.alv-secao__cab h3{ margin:0; font-size:12px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--tinta-2); }
+.alv-secao__cab span{ font-size:11.5px; color:var(--tinta-3); font-variant-numeric:tabular-nums; }
+
+.alv-mosaico{
+  display:grid; grid-template-columns:repeat(auto-fill, minmax(68px, 1fr));
+  grid-auto-rows:78px; gap:5px;
+}
+.alv-bloco{
+  position:relative; overflow:hidden; isolation:isolate;
+  border:1px solid var(--linha-forte); border-radius:var(--r);
+  background:var(--papel-3); color:var(--tinta);
+  padding:5px 6px; display:flex; flex-direction:column;
+  align-items:flex-start; justify-content:space-between;
+  text-align:left; cursor:pointer; -webkit-tap-highlight-color:transparent;
+}
+/* o preenchimento sobe como fiada de bloco */
+.alv-bloco__fiada{
+  position:absolute; left:0; right:0; bottom:0; z-index:-1;
+  background-color:var(--alv-t);
+  background-image:
+    repeating-linear-gradient(to top, rgba(46,49,40,0) 0 7px, rgba(46,49,40,.16) 7px 8px),
+    repeating-linear-gradient(to right, rgba(46,49,40,0) 0 15px, rgba(46,49,40,.12) 15px 16px);
+  border-top:2px solid var(--alv-c);
+  transition:height .25s ease;
+}
+.alv-bloco__fiada.vazia{ border-top:0; }
+.alv-bloco__cod{ font-size:12.5px; font-weight:700; font-variant-numeric:tabular-nums; position:relative; }
+.alv-bloco__m2{ font-size:10.5px; color:var(--tinta-2); position:relative; font-variant-numeric:tabular-nums; }
+.alv-bloco__pc{ font-size:14px; font-weight:700; line-height:1; position:relative; font-variant-numeric:tabular-nums; }
+.alv-bloco.ok{ border-color:var(--alv-ok); }
+.alv-bloco.atraso{ box-shadow:inset 0 0 0 1px var(--alv-atraso); border-color:var(--alv-atraso); }
+.alv-bloco.semquant{ border-style:dashed; border-color:var(--alv-semquant); }
+.alv-bloco__marca{ position:absolute; top:4px; right:5px; display:flex; gap:3px; align-items:center; }
+.alv-bloco__marca b{
+  font-size:9.5px; font-weight:700; background:var(--tinta); color:var(--papel-2);
+  border-radius:2px; padding:0 3px; line-height:1.5;
+}
+.alv-bloco__alerta{ color:var(--tijolo); font-weight:700; font-size:13px; line-height:1; }
+
+/* ------------------------------------------------------------
+   Ficha — folha deslizante no celular, painel lateral no monitor
+   ------------------------------------------------------------ */
+.alv-cortina{
+  position:fixed; inset:0; z-index:60; background:rgba(46,49,40,.45);
+  opacity:0; pointer-events:none; transition:opacity .2s;
+}
+.alv-cortina.ver{ opacity:1; pointer-events:auto; }
+
+.alv-ficha{
+  position:fixed; left:0; right:0; bottom:0; z-index:61;
+  background:var(--papel-2); border-top:1px solid var(--linha);
+  border-radius:12px 12px 0 0; box-shadow:var(--sombra);
+  max-height:92vh; max-height:92dvh; overflow-y:auto;
+  overscroll-behavior:contain; -webkit-overflow-scrolling:touch;
+  transform:translateY(102%); transition:transform .24s ease;
+  padding-bottom:calc(18px + env(safe-area-inset-bottom, 0px));
+}
+.alv-ficha.ver{ transform:none; }
+@media (min-width:760px){
+  .alv-ficha{
+    left:auto; right:18px; bottom:18px; width:430px;
+    border:1px solid var(--linha); border-radius:var(--r);
+    max-height:min(88vh, 860px);
+  }
+}
+.alv-ficha__pad{ padding-left:16px; padding-right:16px; }
+
+.alv-ficha__cab{
+  position:sticky; top:0; z-index:2; background:var(--papel-2);
+  border-bottom:1px solid var(--linha); padding-block:12px 10px;
+}
+/* puxador: o usuário de celular espera arrastar isto para fechar */
+.alv-ficha__puxador{
+  width:38px; height:4px; border-radius:2px; background:var(--linha-forte);
+  margin:0 auto 9px;
+}
+@media (min-width:760px){ .alv-ficha__puxador{ display:none; } }
+.alv-ficha__cab h2{ margin:0; font-size:19px; font-weight:700; font-variant-numeric:tabular-nums; }
+.alv-ficha__sub{ font-size:11.5px; color:var(--tinta-3); margin-top:3px; word-break:break-word; }
+.alv-ficha__x{
+  flex:none; border:1px solid var(--linha); background:var(--papel-3); color:var(--tinta-2);
+  border-radius:var(--r); width:var(--alv-toque); height:var(--alv-toque);
+  font-size:18px; line-height:1; display:grid; place-items:center; cursor:pointer;
+}
+
+.alv-bloco-sec{ padding-block:13px; border-bottom:1px solid var(--linha); }
+.alv-bloco-sec:last-child{ border-bottom:0; }
+.alv-bloco-sec > h4{
+  margin:0 0 9px; font-size:11.5px; font-weight:700; letter-spacing:.09em;
+  text-transform:uppercase; color:var(--tinta-3);
+}
+.alv-fatos{ display:grid; grid-template-columns:repeat(auto-fit, minmax(92px, 1fr)); gap:9px; }
+.alv-fato{ background:var(--papel-3); border-radius:var(--r); padding:7px 9px; min-width:0; }
+.alv-fato__r{ font-size:10px; letter-spacing:.07em; text-transform:uppercase; color:var(--tinta-3); }
+.alv-fato__v{ font-size:15px; font-weight:600; margin-top:1px; font-variant-numeric:tabular-nums; }
+
+.alv-alerta{
+  display:flex; gap:8px; font-size:13px; background:var(--madeira-clara);
+  border-left:3px solid var(--madeira); border-radius:0 var(--r) var(--r) 0;
+  padding:8px 10px; margin-top:8px; color:var(--tinta);
+}
+.alv-alerta i{ font-style:normal; font-weight:700; flex:none; }
+
+.alv-pcts{ display:grid; grid-template-columns:repeat(5, 1fr); gap:5px; margin-bottom:10px; }
+.alv-pcts.dupla{ grid-template-columns:1fr 1fr; }
+.alv-pcts button{
+  border:1px solid var(--linha-forte); background:var(--papel-3); color:var(--tinta);
+  border-radius:var(--r); min-height:var(--alv-toque); font-size:14px; font-weight:600; cursor:pointer;
+}
+.alv-pcts button[aria-pressed="true"]{ background:var(--marca-escura); border-color:var(--marca-escura); color:#fff; }
+.alv-faixa{ width:100%; accent-color:var(--marca-escura); height:var(--alv-toque); }
+
+.alv-grade{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.alv-campo{ display:flex; flex-direction:column; gap:3px; min-width:0; }
+.alv-campo.largo{ grid-column:1 / -1; }
+.alv-campo > span{ font-size:10.5px; letter-spacing:.07em; text-transform:uppercase; color:var(--tinta-3); }
+.alv-campo input, .alv-campo select{
+  border:1px solid var(--linha); background:var(--papel); color:var(--tinta);
+  border-radius:var(--r); padding:10px 10px; font-size:16px; width:100%; min-width:0;
+  min-height:var(--alv-toque); font-family:var(--corpo);
+}
+.alv-campo input[type="date"]{ font-variant-numeric:tabular-nums; }
+
+.alv-salvar{
+  width:100%; margin-top:11px; border:0; border-radius:var(--r);
+  background:var(--marca-escura); color:#fff; padding:13px;
+  font-size:15px; font-weight:700; min-height:var(--alv-toque); cursor:pointer;
+}
+.alv-salvar[disabled]{ opacity:.45; cursor:default; }
+.alv-salvar.secundario{ background:var(--papel-3); color:var(--tinta); border:1px solid var(--linha-forte); }
+.alv-msg{ font-size:12.5px; color:var(--tinta-3); margin-top:8px; }
+.alv-msg.erro{ color:var(--tijolo); font-weight:600; }
+
+.alv-hist{ display:flex; flex-direction:column; }
+.alv-hist__l{ display:flex; gap:9px; align-items:baseline; padding:7px 0; border-top:1px dotted var(--linha-forte); font-size:13px; }
+.alv-hist__l:first-child{ border-top:0; }
+.alv-hist__d{ font-size:12px; color:var(--tinta-3); flex:none; width:46px; font-variant-numeric:tabular-nums; }
+.alv-hist__p{ font-weight:700; flex:none; width:42px; font-variant-numeric:tabular-nums; }
+.alv-hist__q{ flex:1 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--tinta-2); }
+
+/* ------------------------------------------------------------
+   Listas das abas Prazos e Equipes
+   ------------------------------------------------------------ */
+.alv-linhas{ border:1px solid var(--linha); border-radius:var(--r); overflow:hidden; background:var(--papel-2); }
+.alv-linha{
+  display:flex; gap:10px; align-items:center; padding:10px 12px;
+  border-top:1px solid var(--linha); min-width:0; min-height:var(--alv-toque);
+}
+.alv-linha:first-child{ border-top:0; }
+.alv-linha__cod{ font-weight:700; font-size:13px; flex:none; width:64px; font-variant-numeric:tabular-nums; }
+.alv-linha__pav{ font-size:11.5px; text-transform:uppercase; color:var(--tinta-3); flex:none; width:62px; }
+.alv-linha__meio{ flex:1 1 auto; min-width:0; font-size:13px; color:var(--tinta-2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.alv-linha__fim{ flex:none; font-size:12.5px; text-align:right; font-variant-numeric:tabular-nums; }
+@media (max-width:700px){
+  .alv-linha{ flex-wrap:wrap; }
+  .alv-linha__meio{ flex:1 1 100%; order:5; }
+}
+.alv-selo{
+  font-size:11px; letter-spacing:.05em; text-transform:uppercase; border-radius:999px;
+  padding:2px 9px; color:#fff; background:var(--alv-zero); flex:none; font-variant-numeric:tabular-nums;
+}
+.alv-selo.ok{ background:var(--alv-ok); }
+.alv-selo.andamento{ background:var(--alv-andamento); }
+.alv-selo.atraso{ background:var(--alv-atraso); }
+.alv-selo.semquant{ background:var(--alv-semquant); }
+
+.alv-titulo{
+  font-size:13px; font-weight:700; letter-spacing:.08em; text-transform:uppercase;
+  color:var(--tinta-2); margin:20px 0 8px;
+}
+.alv-tabela-rolante{ overflow-x:auto; border:1px solid var(--linha); border-radius:var(--r); background:var(--papel-2); }
+.alv-tabela{ width:100%; border-collapse:collapse; font-size:13px; }
+.alv-tabela th, .alv-tabela td{ padding:7px 10px; border-top:1px solid var(--linha); text-align:right; white-space:nowrap; }
+.alv-tabela th:first-child, .alv-tabela td:first-child{ text-align:left; }
+.alv-tabela thead th{
+  border-top:0; font-size:11px; letter-spacing:.07em; text-transform:uppercase; color:var(--tinta-3);
+}
+.alv-tabela td{ font-variant-numeric:tabular-nums; }
+.alv-tabela tfoot td{ border-top:2px solid var(--linha-forte); font-weight:700; }
+
+/* ------------------------------------------------------------
+   Notas de projeto
+   ------------------------------------------------------------ */
+.alv-notas{
+  margin:20px 0 10px; border:1px solid var(--linha); border-radius:var(--r);
+  background:var(--papel-2); overflow:hidden;
+}
+.alv-notas > summary{
+  padding:12px 13px; font-size:12.5px; font-weight:700; letter-spacing:.07em;
+  text-transform:uppercase; color:var(--tinta-2); cursor:pointer; min-height:var(--alv-toque);
+}
+.alv-notas__corpo{ padding:0 13px 14px; font-size:13.5px; color:var(--tinta-2); }
+.alv-notas__corpo ul{ margin:0; padding-left:18px; }
+.alv-notas__corpo li{ margin-bottom:8px; }
+.alv-notas__corpo b{ color:var(--tinta); }
+
+@media (prefers-reduced-motion:reduce){
+  .alv-ficha, .alv-cortina, .alv-bloco__fiada{ transition:none; }
+}
