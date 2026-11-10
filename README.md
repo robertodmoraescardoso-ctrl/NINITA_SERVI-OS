@@ -16,10 +16,14 @@ Os dados ficam no Supabase (banco Postgres + depósito de fotos).
 
 ```
 index.html              página única (o nome tem que ser exatamente este)
+alvenaria.html          apontamento da alvenaria sobre a planta de 1ª fiada
 config.js               URL e chave publicável do Supabase
 assets/
   css/estilo.css        todo o visual (cores da obra, layout, impressão)
+  css/alvenaria.css     planta, mosaico e ficha (só a página de alvenaria)
+  dados/                catálogo da alvenaria e geometria das plantas
   img/                  logo e ícone
+  img/plantas/          as cinco pranchas de 1ª fiada, em PNG
   js/                   o sistema, dividido por assunto:
     main.js             ponto de partida
     supabase.js         conexão, validação da URL/chave, gravação
@@ -55,8 +59,22 @@ assets/
     efetivo.js          cadastro do efetivo (colaboradores) e jornada
     semana.js           aba Semana: programação semanal com equipe e meta
     listaEquipe.js      lista suspensa do efetivo na "Equipe prevista" do cadastro
+  js/alvenaria/         a página de alvenaria, dividida do mesmo jeito:
+    main.js             arranque, login e eventos
+    nuvem.js            conexão e gravação (apontamentos e plano)
+    modelo.js           catálogo em memória e regras de situação
+    vistas.js           planta de 1ª fiada e mosaico
+    ficha.js            ficha da parede e lançamento
+    paineis.js          indicadores, prazos, equipes e material
 migracoes/              scripts SQL do banco, numerados (rodar em ordem)
 ```
+
+> **Alvenaria:** o catálogo das 1.272 paredes e a geometria das plantas
+> ficam em `assets/dados/`, versionados no git, porque vêm da prancha da
+> Tecomat e só mudam em revisão nova. No banco fica só o que a obra
+> produz: apontamento, responsável e prazo. É a mesma separação do painel
+> de concretagem. Para trocar uma prancha por revisão nova é preciso
+> refazer os dois arquivos de `assets/dados/` junto com o PNG.
 
 > **Atenção ao publicar:** o `index.html`, o `config.js` e a pasta `assets/`
 > inteira têm que ir juntos. Se faltar algo, o site mostra um aviso em vez de
